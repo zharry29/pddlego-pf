@@ -17,6 +17,7 @@ def run_chatgpt(message, model=args.model, temperature=0):
         ret = openai.ChatCompletion.create(
             model=model,
             messages=message
+            max_tokens = 1000
         )
     except openai.error.InvalidRequestError:
         if model == "gpt-3.5-turbo":
@@ -25,7 +26,8 @@ def run_chatgpt(message, model=args.model, temperature=0):
             model = "gpt-4-32k"
         ret = openai.ChatCompletion.create(
             model=model,
-            messages=message
+            messages=message,
+            max_tokens = 1000
         )
     gen_text = dict(ret["choices"][0]["message"])["content"]
     return gen_text
