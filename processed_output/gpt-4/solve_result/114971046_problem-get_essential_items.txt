@@ -1,0 +1,1 @@
+get_essential_items ('john', 'rice', 'bandages', 'distilled_water', 'radio_cellphone', 'flashlight')

@@ -1,0 +1,8 @@
+go ('npc', 'foyer', 'north', 'hallway')
+go ('npc', 'hallway', 'east', 'study')
+get ('npc', 'pen', 'study')
+get ('npc', 'paper', 'study')
+go ('npc', 'study', 'west', 'hallway')
+go ('npc', 'hallway', 'west', 'kitchen')
+get ('npc', 'items', 'kitchen')
+thaw_food ('items')

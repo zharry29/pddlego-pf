@@ -1,0 +1,4 @@
+scanports ('computer1', 'hacker')
+scanports ('computer2', 'hacker')
+hack ('computer1', 'admin')
+hack ('computer2', 'admin')

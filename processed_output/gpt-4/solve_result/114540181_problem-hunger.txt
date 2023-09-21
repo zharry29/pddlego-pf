@@ -1,0 +1,1 @@
+hunt_food ('peter', 'bananas')

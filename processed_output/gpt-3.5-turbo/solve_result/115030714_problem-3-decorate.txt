@@ -1,0 +1,2 @@
+make-anime-balloon ('balloon2')
+put-anime-in-photo-frame ('frame2')
