@@ -1,0 +1,51 @@
+(define (domain papyrus-making)
+  (:requirements :strips)
+  
+  (:types object)
+  
+  (:predicates
+    (plant-available ?obj)
+    (stalk-cut ?obj)
+    (outer-layer-peeled ?obj)
+    (inner-portion-cut ?obj)
+    (strips-placed-water ?obj)
+    (strips-laid-out ?obj)
+    (sheets-flattened ?obj)
+    (sheets-polished ?obj)
+    (paper-cut ?obj)
+    (strips-dipped ?obj)
+    (strips-laid-vertically ?obj)
+    (strips-laid-horizontally ?obj)
+    (paper-smoothed ?obj)
+    (paper-dried ?obj)
+  )
+
+  (:action obtain-materials
+    :parameters (?obj - object)
+    :precondition ()
+    :effect (and (plant-available ?obj))
+  )
+
+  (:action get-papyrus-plant
+    :parameters (?obj - object)
+    :precondition ()
+    :effect (and (plant-available ?obj) (stalk-cut ?obj))
+  )
+
+  (:action make-papyrus
+    :parameters (?obj - object)
+    :precondition (and (stalk-cut ?obj)
+                      (outer-layer-peeled ?obj)
+                      (inner-portion-cut ?obj)
+                      (strips-placed-water ?obj)
+                      (strips-laid-out ?obj)
+                      (sheets-flattened ?obj)
+                      (sheets-polished ?obj)
+                      (paper-cut ?obj)
+                      (strips-dipped ?obj)
+                      (strips-laid-vertically ?obj)
+                      (strips-laid-horizontally ?obj)
+                      (paper-smoothed ?obj))
+    :effect (and (paper-dried ?obj))
+  )
+)

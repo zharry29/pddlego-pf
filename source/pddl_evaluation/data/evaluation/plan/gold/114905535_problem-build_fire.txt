@@ -1,0 +1,2 @@
+go ('east', 'npc', 'shore', 'forest_edge')
+go ('east', 'npc', 'forest_edge', 'forest')

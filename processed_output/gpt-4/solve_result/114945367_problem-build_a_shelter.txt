@@ -1,0 +1,1 @@
+build-shelter ('location1')

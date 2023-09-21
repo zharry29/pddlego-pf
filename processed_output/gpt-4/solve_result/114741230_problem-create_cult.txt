@@ -1,0 +1,3 @@
+create_secret ('cult1')
+add_members ('cult1', 'cult1')
+start_society ('cult1', 'cult1')

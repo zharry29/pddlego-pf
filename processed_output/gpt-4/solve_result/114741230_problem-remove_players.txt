@@ -1,0 +1,5 @@
+verify_players ('player1', 'player1')
+verify_players ('player2', 'player1')
+verify_players ('player3', 'player1')
+verify_players ('player4', 'player1')
+verify_players ('player5', 'player1')

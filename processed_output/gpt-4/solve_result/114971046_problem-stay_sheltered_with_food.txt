@@ -1,0 +1,1 @@
+stay_sheltered_with_food ('john', 'rice')
