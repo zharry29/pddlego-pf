@@ -1,0 +1,66 @@
+Sure, here are the respective PDDL domain and problem files for the task.
+
+PDDL Domain File:
+
+```
+(define (domain snack)
+(:requirements :strips :typing :negative-preconditions)
+(:types
+    place - object
+    food - object
+)
+(:predicates
+    (at ?x - place)
+    (in ?x - food ?y - place)
+    (holding ?x - food)
+)
+(:action find
+    :parameters (?f - food ?p - place)
+    :precondition (in ?f ?p)
+    :effect (and (not (in ?f ?p)) (holding ?f))
+)
+(:action go
+    :parameters (?from - place ?to - place)
+    :precondition (at ?from)
+    :effect (and (not (at ?from)) (at ?to))
+)
+(:action pick
+    :parameters (?f - food ?p - place)
+    :precondition (and (at ?p) (in ?f ?p))
+    :effect (and (not (in ?f ?p)) (holding ?f))
+)
+(:action put
+    :parameters (?f - food ?p - place)
+    :precondition (and (at ?p) (holding ?f))
+    :effect (and (not (holding ?f)) (in ?f ?p))
+)
+)
+```
+
+PDDL Problem File:
+
+```
+(define (problem snack-problem)
+(:domain snack)
+(:objects
+    user - place
+    counter - place
+    table - place
+    initial - place
+    kettle-chips - food
+    multigrain-chips - food
+    jalapeno-chips - food
+    rice-chips - food
+)
+(:init 
+    (at initial)
+    (in kettle-chips table)
+    (in multigrain-chips counter)
+    (in jalapeno-chips counter)
+    (in rice-chips table)
+)
+(:goal (in kettle-chips user))
+)
+```
+
+Note: In this case, kettle-chips are assumed to be a salty snack.

@@ -1,0 +1,58 @@
+First, let's start with the PDDL domain file, which provides a high-level specification of the types of actions this robot would use. Let's call this file "robot-task.pddl".
+
+```
+(define (domain robot-task)
+    (:requirements :strips :typing :negative-preconditions)
+    (:types
+        location item
+    )
+    (:predicates
+        (at ?x - location)
+        (has ?i - item)
+        (is_salty ?i - item)
+    )
+    (:action find
+        :parameters (?i - item ?x - location)
+        :precondition (at ?x)
+        :effect (has ?i)
+    )
+    (:action go
+        :parameters (?x - location)
+        :precondition (and)
+        :effect (at ?x)
+    )
+    (:action pick
+        :parameters (?i - item)
+        :precondition (and (not (has ?i)) (at ?x))
+        :effect (has ?i)
+    )
+    (:action put
+        :parameters (?i - item ?u - user)
+        :precondition (and (has ?i) (is_salty ?i))
+        :effect (not (has ?i))
+    )
+)
+```
+
+Now let's define the specific problem instance in a separate PDDL file, which we will call "robot-task-prob.pddl".
+
+```
+(define (problem salty-task)
+    (:domain robot-task)
+    (:objects
+        counter table user trash bowl initial - location
+        apple orange kettle_chips multigrain_chips jalapeno_chips rice_chips energy_bar seven-up 
+        coke lime_soda grapefruit_soda pepsi tea redbull water sponge - item
+    )
+    (:init
+        (at initial)
+        (is_salty kettle_chips)
+        (is_salty multigrain_chips)
+        (is_salty jalapeno_chips)
+        (is_salty rice_chips)
+    )
+    (:goal (exists (?i - item) (and (is_salty ?i) (not (has ?i)))))
+)
+```
+
+In this problem instance, we start at the initial location, and the goal is to no longer have a salty item (i.e., it has been given to the user).

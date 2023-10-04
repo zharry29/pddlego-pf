@@ -1,0 +1,68 @@
+Domain File (robot_domain.pddl):
+
+```pddl
+(define (domain robot-domain)
+    (:requirements :strips :typing)
+    (:types
+        1
+        location object - 1
+        drink - object
+      )
+    (:predicates
+        (at ?o - 1 ?l - location)
+        (in-gripper ?o - object)
+      )
+    (:action find
+        :parameters (?o - object ?l - location)
+        :precondition (at ?o ?l)
+        :effect (and 
+                (not (at ?o ?l))
+                (in-gripper ?o))
+      )
+    (:action go
+        :parameters (?l1 - location ?l2 - location)
+        :precondition (at ?o ?l1)
+        :effect (and
+                (not (at ?o ?l1))
+                (at ?o ?l2))
+      )
+    (:action pick
+        :parameters (?o - object)
+        :precondition (and
+                (not (in-gripper ?o))
+                (at ?o ?location))
+        :effect (in-gripper ?o)
+      )
+    (:action put
+        :parameters (?o - object)
+        :precondition (and
+                (in-gripper ?o)
+                (not (at ?o ?location)))
+        :effect (and
+                (not (in-gripper ?o))
+                (at ?o ?location))
+    )
+)
+```
+
+Problem File (put_coke_problem.pddl):
+
+```pddl
+(define (problem put_coke_in_gripper)
+  (:domain robot-domain)
+  (:objects
+    counter table user trash bowl initial - location
+    apple orange kettle_chips multigrain_chips jalapeno_chips rice_chips energy_bar
+    seven_up coke lime_soda grapefruit_soda pepsi tea redbull water - object
+  )
+  (:init
+    (at table coke)
+    (at initial robot)
+  )
+  (:goal
+    (in-gripper coke)
+  )
+)
+```
+
+This problem file represents a task of finding the coke and putting it in the gripper. The coke is initially on the table and the robot is at the initial location. The goal of the problem is that the coke is in the gripper of the robot.

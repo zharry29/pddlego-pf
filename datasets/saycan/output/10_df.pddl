@@ -1,0 +1,30 @@
+(define (domain spicy-food-bot)
+ (:requirements :strips :typing)
+ (:types location item)
+ (:predicates
+  (at ?x - location)
+  (at-item ?x - item)
+  (has ?x - item)
+  (spicy ?x - item)
+ )
+ (:action find
+  :parameters (?x - item)
+  :precondition (spicy ?x)
+  :effect (at-item ?x)
+ )
+ (:action go
+  :parameters (?x - location)
+  :precondition (at-item ?i - item)
+  :effect (and (not (at ?f - location)) (at ?x))
+ )
+ (:action pick
+  :parameters (?x - item)
+  :precondition (and (at-item ?x) (at ?l - location))
+  :effect (and (not (at-item ?x)) (has ?x))
+ )
+ (:action put
+  :parameters (?x - item)
+  :precondition (has ?x)
+  :effect (and (not (has ?x)) (at-item ?x))
+ )
+)

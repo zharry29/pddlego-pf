@@ -1,0 +1,61 @@
+Given the constraints of the problem, the first thing to identify is a list of drinks that contain caffeine. The drinks are: coke, pepsi, tea, and redbull. Assumptions made on the locations: "table" is where the user is seated, "counter" is where the drinks are placed, "initial" is the robot's starting position. Here's how you can represent the task using PDDL:
+
+Domain File (caffeine_drink.pddl):
+```
+(define (domain caffeine_drink)
+ (:requirements :strips)
+ (:predicates
+  (at ?x) ;the current location
+  (drink ?x ?loc) ;the location of the dink
+  (holding ?x) ;the drink the robot is holding
+ )
+ (:action find
+  :parameters (?x ?loc)
+  :precondition (and (at ?loc) (drink ?x ?loc))
+  :effect (holding ?x)
+ )
+
+ (:action go
+  :parameters (?loc)
+  :precondition (not (at ?loc))
+  :effect (and (at ?loc) (not (at (not ?loc))))
+ )
+ 
+ (:action pick
+  :parameters (?x ?loc)
+  :precondition (and (at ?loc) (drink ?x ?loc) (not (holding ?x)))
+  :effect (holding ?x)
+ )
+ 
+ (:action put
+  :parameters (?x ?loc)
+  :precondition (and (at ?loc) (holding ?x))
+  :effect (not (holding ?x))
+ )
+)
+```
+
+Problem File (caffeine_drink_problem.pddl):
+```
+(define (problem get_caffeine_drink)
+ (:domain caffeine_drink)
+ (:objects counter table initial coke pepsi tea redbull)
+ (:init 
+  (at initial)
+  (drink coke counter)
+  (drink pepsi counter)
+  (drink tea counter)
+  (drink redbull counter)
+ )
+ (:goal (and
+         (or (at coke table) (at pepsi table) (at tea table) (at redbull table))
+        )
+ )
+)
+```
+Explanation:
+In the domain file, we define the space, objects, and actions that the robot can make. Our predicates define the possible states: the robot's location, the drink's location, and whether the robot is holding a drink. Our actions alter these states.
+
+In the problem file, we specify our specific problem within that domain. We list our specific objects, the initial state, and the goal state.
+
+In our example, the robot must get a drink with caffeine (represented by the objects coke, pepsi, tea, or redbull) from the counter and bring it to the table. Since our robot can only carry one object at a time, the goal is to have any of those drinks at the table.

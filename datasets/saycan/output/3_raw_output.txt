@@ -1,0 +1,69 @@
+Sure, here is a simple PDDL domain and problem file for your task:
+
+Domain File (deliver.pddl):
+```pddl
+(define (domain deliver)
+(:requirements :strips :typing)
+(:types
+    location item - object
+)
+
+(:predicates
+    (at ?x - object ?y - location)
+    (holding ?robot - object ?item - item)
+)
+
+(:action find
+    :parameters (?x - item ?y - location)
+    :precondition (at ?x ?y)
+    :effect (and
+            (not (at ?x ?y)))
+)
+
+(:action go
+    :parameters (?x - location ?y - location)
+    :precondition (at ?robot ?x)
+    :effect (and
+            (not (at ?robot ?x))
+            (at ?robot ?y))
+)
+
+(:action pick
+    :parameters (?x - location ?y - item)
+    :precondition (and (at ?robot ?x) (at ?y ?x))
+    :effect (and
+            (not (at ?y ?x))
+            (holding ?robot ?y))
+)
+
+(:action put
+    :parameters (?x - location ?y - item)
+    :precondition (and (at ?robot ?x) (holding ?robot ?y))
+    :effect (and
+            (not (holding ?robot ?y))
+            (at ?y ?x)))
+)
+```
+
+Problem File (deliver-problem.pddl):
+```pddl
+(define (problem deliver-problem)
+(:domain deliver)
+(:objects
+    robot - object
+    counter initial - location
+    redbull - item
+)
+
+(:init
+    (at robot initial)
+    (at redbull initial)
+)
+
+(:goal (and
+    (at robot counter)
+    (at redbull counter)))
+)
+```
+
+Note that this solution assumes that the robot starts at location `initial` and the redbull is also at location `initial`. You can change these values in the problem file to match your specific scenario.

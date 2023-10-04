@@ -1,0 +1,72 @@
+Here's an example of how you might create a PDDL domain file and a PDDL problem file for the task.
+
+Domain File: 
+```
+(define (domain house-robot)
+(:requirements :strips :typing :negative-preconditions)
+(:types 
+    place item
+)
+(:predicates 
+    (at ?x - place)
+    (has ?x - item)
+    (notapple ?x - item)
+)
+(:action find
+    :parameters (?i - item)
+    :precondition (notapple ?i)
+    :effect (has ?i)
+)
+(:action go
+    :parameters (?p - place)
+    :effect (at ?p)
+)
+(:action pick
+    :parameters (?i - item)
+    :precondition 
+        (and (has ?i) 
+             (notapple ?i))
+    :effect 
+        (and (has ?i) 
+             (not (notapple ?i))))
+             
+(:action put
+    :parameters (?i - item ?p - place)
+    :precondition 
+        (and (at ?p) 
+             (has ?i))
+    :effect (not (has ?i)))
+)
+```
+
+Problem File:
+```
+(define (problem house-robot-instance)
+(:domain house-robot)
+(:objects 
+    counter table user trash bowl initial - place
+    apple orange kettle_chips multigrain_chips jalapeno_chips rice_chips energy_bar seven_up coke lime_soda grapefruit_soda pepsi tea redbull water - item
+)
+(:init 
+    (at initial)
+    (notapple orange)
+    (notapple kettle_chips)
+    (notapple multigrain_chips)
+    (notapple jalapeno_chips)
+    (notapple rice_chips)
+    (notapple energy_bar)
+    (notapple seven_up)
+    (notapple coke)
+    (notapple lime_soda)
+    (notapple grapefruit_soda)
+    (notapple pepsi)
+    (notapple tea)
+    (notapple redbull)
+    (notapple water)
+)
+(:goal 
+    (exists (?i - item)
+        (and (has ?i) 
+             (not (notapple ?i))))))
+```
+This solution assumes a very simple interpretation of the robot's tasks and capabilities. The domain file defines actions the robot can take: find a non-apple item, go somewhere, pick up an item, and put it down. The problem file sets the initial state of the robot in the house and specifies the objects available. The goal is for the robot to have an item that's not an apple.

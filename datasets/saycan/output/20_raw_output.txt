@@ -1,0 +1,82 @@
+Here is what a PDDL domain file and a PDDL problem file for the task could look like:
+
+**Domain File(demo.pddl):**
+
+```
+(define (domain household)
+  (:requirements :strips :typing)
+  
+  (:types
+    item - object
+    location - object
+  )
+
+  (:predicates
+    (at ?item - item ?loc - location)
+    (in_hand ?item - item)
+    (not_an_apple ?item - item)
+  )
+
+  (:action find
+    :parameters (?item - item)
+    :precondition (at ?item initial) 
+    :effect (and
+      (not (at ?item initial))
+      (in_hand ?item)
+    )
+  )
+
+  (:action go
+    :parameters (?loc - location)
+    :effect ()
+  )
+
+  (:action pick
+    :parameters (?item - item ?loc - location)
+    :precondition (and
+      (at ?item ?loc)
+      (not_an_apple ?item)
+    )
+    :effect (and
+      (not (at ?item ?loc))
+      (in_hand ?item)
+    )
+  )
+
+  (:action put
+    :parameters (?item - item ?loc - location)
+    :precondition (and
+      (in_hand ?item)
+      (not (at ?item ?loc))
+     )
+    :effect (at ?item ?loc)
+  )
+)
+```
+
+**Problem File(problem.pddl):**
+
+```
+(define (problem household-problem)
+  (:domain household)
+
+  (:objects 
+    apple orange - item
+    counter table user trash bowl initial - location
+  )
+
+  (:init
+    (at apple counter)
+    (at orange bowl)
+    (at user initial)
+    (not_an_apple orange)
+  )
+
+  (:goal 
+    (and 
+      (at orange user)
+    )
+  )
+)
+```
+Note: This is a simple example. In a real-world task, the robot would need to be able to perceive the environment, handle changes in it, perform actions conditionally, deal with time and resource constraints, and more. This might require additional actions, preconditions, effects, and state variables.

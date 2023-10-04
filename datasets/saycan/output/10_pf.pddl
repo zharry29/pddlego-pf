@@ -1,0 +1,17 @@
+(define (problem spicy-food-bot-task)
+ (:domain spicy-food-bot)
+ (:objects counter table user trash bowl initial - location apple orange kettle-chips multigrain-chips jalapeno-chips rice-chips energy-bar seven-up coke lime-soda grapefruit-soda pepsi tea redbull water - item)
+ (:init 
+  (at initial)
+  (at-item kettle-chips)
+  (at-item jalapeno-chips)
+  (spicy kettle-chips)
+  (spicy jalapeno-chips)
+  (= (total-cost) 0)
+ )
+ (:goal (and 
+  (has ?i - item)
+  (spicy ?i)
+ ))
+ (:metric minimize (total-cost))
+)

@@ -2,11 +2,11 @@ import openai
 import backoff
 
 @backoff.on_exception(backoff.expo, (openai.error.RateLimitError, openai.error.APIError, openai.error.Timeout))
-def run_chatgpt(message, model=args.model, temperature=0):
+def run_chatgpt(message, model, temperature=0):
     try:
         ret = openai.ChatCompletion.create(
             model=model,
-            messages=message
+            messages=message,
             max_tokens = 1000
         )
     except openai.error.InvalidRequestError:

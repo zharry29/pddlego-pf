@@ -1,0 +1,79 @@
+The PDDL Domain File:
+
+```
+(define (domain household)
+(:requirements :strips :typing :negative-preconditions)
+(:types
+    location
+    food
+)
+
+(:predicates
+    (at ?x - location)
+    (hold ?y - food)
+    (in ?y - food ?x - location)
+    (spicy ?y - food)
+)
+
+(:action find
+    :parameters (?y - food ?x - location)
+    :precondition (and (at ?x) (in ?y ?x))
+    :effect (and (not (in ?y ?x)) (hold ?y))
+)
+
+(:action go 
+    :parameters (?x - location)
+    :precondition (at ?x)
+    :effect (and (not (at ?x)) (at ?x))
+)
+
+(:action pick
+    :parameters (?y - food ?x - location)
+    :precondition (and (at ?x) (in ?y ?x) (not (hold ?y)))
+    :effect (and (not (in ?y ?x)) (hold ?y))
+)
+
+(:action put
+    :parameters (?y - food)
+    :precondition (hold ?y)
+    :effect (and (not (hold ?y)) (in ?y ?x))
+)
+)
+```
+
+The PDDL Problem File:
+
+```
+(define (problem problem1)
+(:domain household)
+(:objects
+    counter table user trash bowl initial - location
+    apple orange kettle_chips multigrain_chips jalapeno_chips rice_chips energy_bar seven-up coke lime_soda grapefruit_soda pepsi tea redbull water - food
+)
+
+(:init
+    (at initial)
+    (in apple counter)
+    (in orange counter)
+    (in kettle_chips counter)
+    (in multigrain_chips counter)
+    (in jalapeno_chips counter)
+    (in rice_chips counter)
+    (in energy_bar counter)
+    (in seven-up counter)
+    (in coke counter)
+    (in lime_soda counter)
+    (in grapefruit_soda counter)
+    (in pepsi counter)
+    (in tea counter)
+    (in redbull counter)
+    (in water counter)
+    (spicy jalapeno_chips)
+)
+
+(:goal
+    (and (hold ?y) (spicy ?y))
+)
+)
+```
+In this domain and problem, the "find" action enables the robot to find a particular food item in a location, whereas the "pick" action allows the robot to pick up the discovered food. The "go" action represents the robot moving between different locations, and the "put" action represents the robot putting down a food currently being held. Note that the robot can only hold one food item at a time. The robot is asked to find and pick up a spicy food, which in this case is jalapeno chips. The task is considered successful once the robot is holding a spicy food.

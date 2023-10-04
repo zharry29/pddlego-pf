@@ -1,0 +1,73 @@
+Sure, below are the PDDL domain and problem files for the given task. 
+
+Domain File:
+```
+(define (domain household-robot)
+  (:requirements :strips :typing)
+
+  (:types
+    location - object
+    item - object
+    robot - object
+  )
+
+  (:predicates
+    (at ?x - object ?y - location)
+    (in ?x - item ?y - robot)
+  )
+
+  (:action find
+    :parameters (?r - robot ?i - item ?l - location)
+    :precondition (at ?r ?l)
+    :effect (in ?i ?r)
+  )
+
+  (:action go
+    :parameters (?r - robot ?from - location ?to - location)
+    :precondition (at ?r ?from)
+    :effect (and
+      (not (at ?r ?from))
+      (at ?r ?to)
+    )
+  )
+
+  (:action pick
+    :parameters (?r - robot ?i - item)
+    :precondition (and (at ?r ?i) (not (in ?i ?r)))
+    :effect (in ?i ?r)
+  )
+
+  (:action put
+    :parameters (?r - robot ?i - item ?l - location)
+    :precondition (and (at ?r ?l) (in ?i ?r))
+    :effect (and
+      (not (in ?i ?r))
+      (at ?i ?l)
+    )
+  )
+)
+```
+
+Problem File:
+```
+(define (problem restock-rice-chips)
+  (:domain household-robot)
+
+  (:objects
+    counter table user trash bowl initial - location
+    apple orange kettle chips multigrain chips jalapeno chips rice chips energy bar seven-up coke lime soda grapefruit soda pepsi tea redbull water sponge - item
+    bot - robot
+  )
+
+  (:init
+    (at bot table)
+    (at rice chips trash)
+  )
+
+  (:goal
+    (at rice chips counter)
+  )
+)
+```
+
+Here, the robot needs to restock the rice chips on the counter, which are currently in the trash. The robot starts on the table and must find the chips, go to the trash, then to the counter and replace the chips.

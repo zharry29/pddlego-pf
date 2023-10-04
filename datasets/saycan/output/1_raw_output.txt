@@ -1,0 +1,64 @@
+Sure, first let's define the PDDL domain file and then the PDDL problem file.
+
+PDDL Domain File:
+
+```
+(define (domain household)
+    (:requirements :strips :typing)
+    (:types
+        location
+        item
+    )
+    (:predicates
+        (at ?x - location)
+        (located ?i - item ?x - location)
+    )
+
+    (:action find
+        :parameters (?i - item ?x - location)
+        :precondition (at ?x)
+        :effect (located ?i ?x)
+    )
+
+    (:action go
+        :parameters (?x - location)
+        :effect (and 
+                 (at ?x)
+                 (not (at (not ?x)))
+         )
+    )
+
+    (:action pick
+        :parameters (?i - item ?x - location)
+        :precondition (and (at ?x) (located ?i ?x))
+        :effect (not (located ?i ?x))
+    )
+
+    (:action put
+        :parameters (?i - item ?x - location)
+        :precondition (at ?x)
+        :effect (located ?i ?x)
+    )
+)
+```
+PDDL Problem File:
+
+```
+(define (problem task)
+    (:domain household)
+    (:objects
+        table counter - location
+    )
+    (:init 
+        (at initial)
+    )
+    (:goal 
+        (and 
+            (at table)
+            (at counter)
+        )
+    )
+)
+```
+
+Remember, this is a very basic representation. You might want to add more details and vary the task as per necessity.

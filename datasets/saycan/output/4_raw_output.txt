@@ -1,0 +1,60 @@
+DOMAIN FILE:
+
+```
+(define (domain household)
+(:requirements :strips :typing)
+(:types
+ households food drinks locations
+)
+(:predicates
+ (at ?x - something ?place - locations)
+ (handEmpty)
+ (hold ?x - something)
+)
+
+(:action go
+ :parameters (?from - locations ?to - locations)
+ :precondition (and (at robot ?from))
+ :effect (and (not (at robot ?from)) (at robot ?to)))
+
+(:action find
+ :parameters (?x - something ?place - locations)
+ :precondition (and (at robot ?place))
+ :effect (and (at ?x ?place)))
+
+(:action pick
+ :parameters (?x - something)
+ :precondition (and (at robot ?place) (at ?x ?place) (handEmpty))
+ :effect (and (not(at ?x ?place)) (not(handEmpty)) (hold ?x)))
+
+(:action put
+ :parameters (?x - something ?place - locations)
+ :precondition (and (at robot ?place) (hold ?x))
+ :effect (and (not (hold ?x)) (handEmpty) (at ?x ?place))))
+```
+
+PROBLEM FILE:
+
+```
+(define (problem householdProblem)
+ (:domain household)
+ (:objects 
+  counter table user trash bowl initial - locations
+  apple orange kettleChips multiGrainChips jalapenoChips riceChips energyBar - food
+  sevenUp coke limeSoda grapefruitSoda pepsi tea redBull water - drinks
+  robot - robot
+  sponge - sponge
+ )
+ (:init
+  (at robot counter)
+  (at jalapenoChips counter)
+  (handEmpty))
+ (:goal
+  (and
+   (not (at jalapenoChips counter))
+   (at jalapenoChips trash)
+ ))
+ )
+```
+
+In this PDDL domain and problem, the robot is initially at the counter where the jalapeno chips are. The goal is to remove the jalapeno chips from the counter, either by moving them to the trash or anything else. The location where to move the jalapeno chips can be specified as needed. For simplicity, this example moves the jalapeno chips to the trash.

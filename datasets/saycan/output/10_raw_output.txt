@@ -1,0 +1,56 @@
+Sure, here are the PDDL domain and problem files for the given task.
+
+DOMAIN FILE:
+```python
+(define (domain spicy-food-bot)
+ (:requirements :strips :typing)
+ (:types location item)
+ (:predicates
+  (at ?x - location)
+  (at-item ?x - item)
+  (has ?x - item)
+  (spicy ?x - item)
+ )
+ (:action find
+  :parameters (?x - item)
+  :precondition (spicy ?x)
+  :effect (at-item ?x)
+ )
+ (:action go
+  :parameters (?x - location)
+  :precondition (at-item ?i - item)
+  :effect (and (not (at ?f - location)) (at ?x))
+ )
+ (:action pick
+  :parameters (?x - item)
+  :precondition (and (at-item ?x) (at ?l - location))
+  :effect (and (not (at-item ?x)) (has ?x))
+ )
+ (:action put
+  :parameters (?x - item)
+  :precondition (has ?x)
+  :effect (and (not (has ?x)) (at-item ?x))
+ )
+)
+```
+PROBLEM FILE:
+```python
+(define (problem spicy-food-bot-task)
+ (:domain spicy-food-bot)
+ (:objects counter table user trash bowl initial - location apple orange kettle-chips multigrain-chips jalapeno-chips rice-chips energy-bar seven-up coke lime-soda grapefruit-soda pepsi tea redbull water - item)
+ (:init 
+  (at initial)
+  (at-item kettle-chips)
+  (at-item jalapeno-chips)
+  (spicy kettle-chips)
+  (spicy jalapeno-chips)
+  (= (total-cost) 0)
+ )
+ (:goal (and 
+  (has ?i - item)
+  (spicy ?i)
+ ))
+ (:metric minimize (total-cost))
+)
+```
+In these files, `find`, `go`, `pick`, and `put` actions represent the robot's capability to find a spicy item, move to it, pick it up, and bring it to the user. For the sake of the problem, we are considering that only `kettle-chips` and `jalapeno-chips` are spicy. The goal is to have a spicy item in the possession of the robot.

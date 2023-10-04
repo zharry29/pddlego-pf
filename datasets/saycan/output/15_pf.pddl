@@ -1,0 +1,15 @@
+(define (problem get_caffeine_drink)
+ (:domain caffeine_drink)
+ (:objects counter table initial coke pepsi tea redbull)
+ (:init 
+  (at initial)
+  (drink coke counter)
+  (drink pepsi counter)
+  (drink tea counter)
+  (drink redbull counter)
+ )
+ (:goal (and
+         (or (at coke table) (at pepsi table) (at tea table) (at redbull table))
+        )
+ )
+)

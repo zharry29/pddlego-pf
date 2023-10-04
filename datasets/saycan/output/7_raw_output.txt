@@ -1,0 +1,69 @@
+Sure, here's a PDDL domain file and problem file for your task.
+
+Domain File: 
+
+    (define (domain robot-task)
+      (:requirements :strips :typing)
+      (:types 
+         location
+         drink)
+      (:predicates
+        (at ?x - location)
+        (in_hand ?d - drink)
+    )
+    (:action find 
+        :parameters (?x - location ?d - drink)
+        :precondition (at ?x)
+        :effect (and 
+            (not (at ?x)) 
+            (in_hand ?d))
+    )
+    (:action go 
+        :parameters (?x - location)
+        :precondition (true)
+        :effect (at ?x)
+    )
+    (:action pick 
+        :parameters (?d - drink)
+        :precondition (in_hand ?d)
+        :effect (and 
+            (not (in_hand ?d))
+            (at ?d))
+    )
+    (:action put 
+        :parameters (?d - drink ?x - location)
+        :precondition (and 
+            (not (in_hand ?d))
+            (at ?x))
+        :effect (and 
+            (not (at ?d))
+            (in_hand ?d))
+    )
+    )
+
+Problem PDDL file would look something like this:
+
+    (define (problem coke-problem)
+      (:domain robot-task)
+      (:objects 
+         counter table user trash bowl initial - location
+         apple orange kettle-chips multigrain-chips jalapeno-chips rice-chips energy-bar seven-up coke lime-soda grapefruit-soda pepsi tea redbull water - drink)
+      (:init 
+         (at initial)
+         (at apple)
+         (at orange)
+         (at kettle-chips)
+         (at multigrain-chips)
+         (at jalapeno-chips)
+         (at rice-chips)
+         (at energy-bar)
+         (at seven-up)
+         (at coke)
+         (at lime-soda)
+         (at grapefruit-soda)
+         (at pepsi)
+         (at tea)
+         (at redbull)
+         (at water))
+      (:goal (at coke)))
+Note that the specific locations of the drinks (or which drink is at which location) might need to be specified in the problem initial state, along with where the robot is initially (in the example it is at "initial"). Also the goal in this problem file is simplistic, and assumes that moving to the coke would involve "lifting" it, according to the robot's capabilities. You might need to adjust this to fit the exact capabilities and constraints of your robot.

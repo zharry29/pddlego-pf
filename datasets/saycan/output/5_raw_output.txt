@@ -1,0 +1,76 @@
+Here's how you can model this task with PDDL. 
+
+First, let's specify the domain:
+```
+(define (domain household)
+  (:requirements :strips :typing)
+  (:types
+    location item - object
+    robot coke - item
+  )
+
+  (:predicates
+    (at ?x - location)
+    (in ?x - item ?y - location)
+    (hold ?x - item)
+  )
+
+  (:action find
+    :parameters (?x - item ?y - location)
+    :precondition (in ?x ?y)
+    :effect (not (in ?x ?y))
+  )
+
+  (:action go
+    :parameters (?x - location)
+    :precondition (at ?x)
+    :effect (and (not (at ?x))
+                 (at ?x))
+  )
+
+  (:action pick
+    :parameters (?x - item)
+    :precondition (not (hold ?x))
+    :effect (hold ?x)
+  )
+  
+  (:action put
+    :parameters (?x - item ?y - location)
+    :precondition (and (hold ?x) (at ?y))
+    :effect (in ?x ?y))
+)
+``` 
+Second, let's specify the problem:
+```
+(define (problem household-task)
+  (:domain household)
+  (:objects
+    table counter trash user initial - location
+    apple orange kettle_chips multigrain_chips jalapeno_chips rice_chips energy_bar seven_up coke lime_soda grapefruit_soda pepsi tea redbull water sponge - item
+    my_robot - robot
+  )
+  (:init
+    (at initial)
+    (in apple counter)
+    (in orange table)
+    (in kettle_chips counter)
+    (in multigrain_chips counter)
+    (in jalapeno_chips table)
+    (in rice_chips counter)
+    (in energy_bar table)
+    (in seven_up trash)
+    (in coke table)
+    (in lime_soda trash)
+    (in grapefruit_soda counter)
+    (in pepsi trash)
+    (in tea counter)
+    (in redbull trash)
+    (in water user)
+    (in sponge trash)
+  )
+  (:goal
+    (hold coke)
+  )
+)
+```
+This PDDL models the task of the robot finding the coke can and picking it up. The `go` action isn't necessary for this task, as the robot already knows where the coke can is, and for lifting and holding the coke can all it's needed is the `find` and `pick` actions. The `put` action would only be necessary if the task required the robot to put down the coke can.

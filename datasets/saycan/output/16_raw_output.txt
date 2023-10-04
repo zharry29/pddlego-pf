@@ -1,0 +1,63 @@
+Sure, here is a PDDL Domain File:
+
+```
+(define (domain house-robot)
+    (:requirements :strips)
+    (:predicates 
+        (item-at ?item ?location) 
+        (robot-at ?location)
+        (holds ?item)
+        (contains-caffeine ?item)
+    )
+    (:action find
+        :parameters (?item ?location)
+        :precondition (item-at ?item ?location)
+        :effect (robot-at ?location)
+    )
+    (:action go
+        :parameters (?location)
+        :precondition (robot-at ?location)
+        :effect (and (not (robot-at ?location)) (robot-at ?location))
+    )
+    (:action pick
+        :parameters (?item ?location)
+        :precondition (and (robot-at ?location) (item-at ?item ?location))
+        :effect (and (not (item-at ?item ?location)) (holds ?item))
+    )
+    (:action put
+        :parameters (?item ?location)
+        :precondition (and (robot-at ?location) (holds ?item))
+        :effect (and (not (holds ?item)) (item-at ?item ?location))
+    )
+)
+```
+PDDL Problem File:
+
+```
+(define (problem house-robot-problem)
+    (:domain house-robot)
+    (:objects 
+        apple orange kettle-chips multigrain-chips jalapeno-chips rice-chips energy-bar 
+        seven-up coke lime-soda grapefruit-soda pepsi tea redbull water - item
+        counter table user trash bowl initial - location
+    )
+    (:init 
+        (robot-at initial)
+        (item-at coke counter)
+        (item-at pepsi table)
+        (item-at tea bowl)
+        (item-at redbull trash)
+        (contains-caffeine coke)
+        (contains-caffeine pepsi)
+        (contains-caffeine tea)
+        (contains-caffeine redbull)
+    )
+    (:goal (and 
+        (robot-at user)
+        (holds ?item)
+        (contains-caffeine ?item)
+    ))
+)
+```
+
+In this problem, we're trying to get an item that has caffeine. We have four caffeinated items: coke, pepsi, tea, and redbull. The robot must find one of these items, go to its location, pick it up and deliver it to the user.

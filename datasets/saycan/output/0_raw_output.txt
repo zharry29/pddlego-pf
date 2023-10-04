@@ -1,0 +1,62 @@
+Sure, here's a simple PDDL domain and a problem file:
+
+Domain file (robot_domain.pddl):
+
+```
+(define (domain robot-domain)
+    (:requirements :strips)
+    (:predicates 
+        (at ?x)
+        (empty-hand ?x)
+    )
+    (:action Find
+        :parameters (?x)
+        :precondition (empty-hand)
+        :effect (and (not (empty-hand)) (at ?x))
+    )
+    (:action Go
+        :parameters (?x ?y)
+        :precondition (and (at ?x))
+        :effect (and (not (at ?x)) (at ?y))
+    )
+   (:action Pick
+        :parameters (?x)
+        :precondition (at ?x)
+        :effect (not (at ?x))
+    )
+   (:action Put
+        :parameters (?x)
+        :precondition (not (empty-hand))
+        :effect (and (empty-hand) (at ?x))
+    )
+)
+```
+
+Problem file (robot_problem.pddl):
+
+```
+(define (problem robot-problem)
+    (:domain robot-domain)
+    (:objects
+        counter
+        table
+        user
+        trash
+        bowl
+        initial
+    )
+    (:init
+        (at initial)
+        (empty-hand)
+    )
+    (:goal (and
+        (at counter)
+        (at table)
+        (at user)
+        (at trash)
+        (at bowl)
+    )
+)
+```
+
+This is a basic approach to your problem where locations are simply objects, and we don't consider food and drinks. The robot starts at "initial" and the goal is to visit all locations once. Please note that these files do not handle the food and drinks and their tastes as the task didn’t specify actions related with them. Depending on your exact requirements, customising or expanding these files might be necessary. Also bear in mind that the order of visiting locations is not specified and depends on the path-finding algorithm your PDDL solver uses.

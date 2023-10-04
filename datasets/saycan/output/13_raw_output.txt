@@ -1,0 +1,75 @@
+Sure, here's a sample PDDL domain and problem file for your task:
+
+Domain file:
+
+```
+(define (domain household)
+  (:requirements :strips :typing)
+  (:types
+    location - object
+    drink - object
+    robot - object
+  )
+
+  (:predicates
+    (at ?x - location ?r - robot)
+    (holding ?o - object ?r - robot)
+    (drink_at ?d - drink ?l - location)
+  )
+
+  (:action find
+    :parameters (?r - robot ?d - drink ?l - location)
+    :precondition (and (at ?l ?r))
+    :effect (and 
+              (not (drink_at ?d ?l))
+              (holding ?d ?r)
+            )
+  )
+
+  (:action go
+    :parameters (?r - robot ?l - location)
+    :precondition (at ?l ?r)
+    :effect (at ?l ?r)
+  )
+
+  (:action pick
+    :parameters (?r - robot ?d - drink ?l - location)
+    :precondition (and (at ?l ?r) (not (holding ?d ?r)) (drink_at ?d ?l))
+    :effect (holding ?d ?r)
+  )
+
+  (:action put
+    :parameters (?r - robot ?d - drink)
+    :precondition (and (holding ?d ?r))
+    :effect (not (holding ?d ?r))
+  )
+)
+```
+
+Problem file:
+
+```
+(define (problem get-drink-task)
+  (:domain household)
+  (:objects
+    kitchen - location
+    user - location
+    robot - robot
+    coke - drink
+  )
+
+  (:init
+    (at kitchen robot)
+    (drink_at coke kitchen)
+  )
+
+  (:goal
+    (and
+      (at user robot)
+      (holding coke robot)
+    )
+  )
+)
+```
+
+This example assumes that the robot is initially in the kitchen and the coke is also located in the kitchen. The objective is for the robot to be at the user's location while holding the coke. Note that this is a simplified version. You may need to add additional details based on the specific household setup and robot capabilities.
