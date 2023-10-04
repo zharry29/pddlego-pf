@@ -40,7 +40,7 @@ def parse_output(list_files):
 def predict_df_pfs(nl_text, tasks):
     prompt = "Given the text below:\n"
     prompt += nl_text + "\n"
-    prompt += f"Your task is to generate a PDDL domain file, and problems file corresponds to the following tasks:\n"
+    prompt += f"Your task is to generate a PDDL domain file, and problems file that correspond to the following tasks:\n"
     for i, task in enumerate(tasks):
         prompt += f"{i+1}. " + task + '\n'
     prompt += "I'll ask you to generate the domain file first, followed by the problems files. Ready?"
