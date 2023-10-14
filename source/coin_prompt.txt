@@ -1,0 +1,54 @@
+You will continue to build a PDDL representation of an environment while exploring it. We will be using the following domain file:
+(define (domain environment)
+  (:requirements :strips :typing :negative-preconditions :disjunctive-preconditions)
+  (:types
+    location
+    direction
+  )
+  (:predicates
+    (at ?loc - location)
+    (visited ?loc - location)
+    (connected ?loc1 - location ?loc2 - location ?dir - direction)
+    (closed_door ?loc1 - location ?loc2 - location)
+  )
+
+  (:action move
+    :parameters (?loc1 - location ?loc2 - location ?dir - direction)
+    :precondition (and (at ?loc1) (connected ?loc1 ?loc2 ?dir) (not (closed_door ?loc1 ?loc2)))
+    :effect (and (not (at ?loc1)) (at ?loc2))
+  )
+
+  (:action open_door
+    :parameters (?loc1 - location ?loc2 - location)
+    :precondition (and (at ?loc1) (closed_door ?loc1 ?loc2))
+    :effect (not (closed_door ?loc1 ?loc2))
+  )
+)
+
+For example, for the given observation:
+You are in the kitchen. To the South you see a closed wooden door.
+
+Your task is to go to a location you have not been yet. You will generate the following problem file:
+(define (problem exploration)
+  (:domain environment)
+  (:objects
+    kitchen l1 - location
+    north south east west - direction
+  )
+  (:init
+    (at kitchen)
+    (visited kitchen)
+    (connected kitchen l1 south)
+    (closed_door kitchen l1)
+  )
+  (:goal 
+    (exists (?x - location)
+        (and
+            (not (visited ?x))
+            (at ?x)
+        )
+    )
+  )
+)
+
+Now, let's start afresh. 

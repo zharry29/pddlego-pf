@@ -1,72 +1,26 @@
-(define (domain letseat)
-  
-  (:requirements :typing) 
-  
-  (:types         
-    location locatable - object
-		bot cupcake - locatable
-    robot - bot
+(define (domain kitchen)
+  (:requirements :strips :typing :negative-preconditions)
+  (:types
+    direction
+    location
+    door
   )
-  
   (:predicates
-		(on ?obj - locatable ?loc - location)
-		(holding ?arm - locatable ?cupcake - locatable)
-    (arm-empty)
-    (path ?location1 - location ?location2 - location)
-  )
-
-
-  (:action pick-up
-    :parameters
-     (?arm - bot
-      ?cupcake - locatable
-      ?loc - location)
-    :precondition
-     (and 
-        (on ?arm ?loc) 
-        (on ?cupcake ?loc)
-        (arm-empty)
-      )
-    :effect
-     (and 
-        (not (on ?cupcake ?loc))
-        (holding ?arm ?cupcake)
-        (not (arm-empty))
-     )
-  )
-
-  (:action drop
-    :parameters
-     (?arm - bot
-      ?cupcake - locatable
-      ?loc - location)
-    :precondition
-     (and 
-        (on ?arm ?loc)
-        (holding ?arm ?cupcake)
-      )
-    :effect
-     (and 
-        (on ?cupcake ?loc)
-        (arm-empty)
-        (not (holding ?arm ?cupcake))
-     )
+    (at ?loc - location)
+    (visited ?loc - location)
+    (door ?d - door ?loc1 - location ?loc2 - location ?dir - direction)
+    (open ?d - door)
   )
 
   (:action move
-    :parameters
-     (?arm - bot
-      ?from - location
-      ?to - location)
-    :precondition
-     (and 
-      (on ?arm ?from) 
-      (path ?from ?to)
-     )
-    :effect
-     (and 
-      (not (on ?arm ?from))
-      (on ?arm ?to)
-     )
+    :parameters (?loc1 - location ?loc2 - location ?d - door ?dir - direction)
+    :precondition (and (at ?loc1) (door ?d ?loc1 ?loc2 ?dir) (open ?d))
+    :effect (and (not (at ?loc1)) (at ?loc2))
+  )
+
+  (:action open_door
+    :parameters (?d - door ?loc1 - location ?loc2 - location ?dir - direction)
+    :precondition (and (at ?loc1) (door ?d ?loc1 ?loc2 ?dir) (not (open ?d)))
+    :effect (open ?d)
   )
 )
