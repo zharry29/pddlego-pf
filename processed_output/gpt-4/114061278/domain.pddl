@@ -1,5 +1,5 @@
 (define (domain coconut_processing)
-(:requirements :strips :typing :conditional-effects)
+(:requirements :strips :typing)
 
 (:types
 coconut - object 
@@ -9,17 +9,15 @@ tool - object
 (:predicates
 (have ?tool - tool)
 (have ?coconut - coconut)
-(in ?coconut - object)
+(in ?coconut - coconut)
 (eyeBored ?coconut - coconut)
 (drained ?coconut - coconut)
 (wrapped ?coconut - coconut)
-(hammered ?coconut - coconut)
 (broken ?coconut - coconut)
 (meatFree ?coconut - coconut)
-(fibreFree ?meat)
-(emptyGlass ?glass)
-(filledGlass ?glass)
-)
+(fibreFree ?coconut - coconut)
+(emptyGlass ?glass - tool)
+(filledGlass ?glass - tool))
 
 (:actions
 (:action poke_eye
@@ -60,7 +58,7 @@ tool - object
 )
 
 (:action fill_Glass
-:parameters (?c - coconut)
-:precondition (and (not(emptyGlass ?glass))(not (filledGlass ?glass)))
-:effect (filledGlass ?glass)
+:parameters (?c - coconut ?g - tool)
+:precondition (and (not(emptyGlass ?g)) (not (filledGlass ?g)))
+:effect (filledGlass ?g)
 )))

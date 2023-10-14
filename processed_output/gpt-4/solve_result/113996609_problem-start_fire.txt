@@ -1,1 +1,1 @@
-Error: unhashable type: 'list'
+start_fire ('john', 'camp', 'stick')

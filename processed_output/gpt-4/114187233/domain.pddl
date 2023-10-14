@@ -46,3 +46,4 @@
     :precondition (smashed ?c)
     :effect (and (baked ?c) (not (has-coconut ?c)))
 )
+)

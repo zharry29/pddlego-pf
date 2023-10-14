@@ -1,1 +1,10 @@
-Error: Running time exceeds 30 seconds
+choose-food ('hotdog1')
+choose-food ('hotdog2')
+choose-food ('hotdog3')
+choose-food ('hotdog4')
+choose-food ('hotdog5')
+throw-food ('hotdog1', 'living')
+throw-food ('hotdog2', 'living')
+throw-food ('hotdog3', 'living')
+throw-food ('hotdog4', 'living')
+throw-food ('hotdog5', 'living')

@@ -1,18 +1,20 @@
-Sure, here is problem file 1.
+Of course, here is the problems file for the task 'catch cook fish':
 
-```lisp
-(define (problem catch_cook_fish)
-  (:domain island_survival)
-  (:objects 
-        john - person 
-        stick - tool 
-        water_side - fire_location 
-        salmon - food
-    )
-  (:init 
-        (has john stick)
-        (in_location john water_side)
-  )
-  (:goal (and (caught salmon) (cooked salmon)))
-)
+```python
+from py2pddl import goal, init
+
+class SurvivalProblem1(SurvivalDomain):
+
+    def __init__(self):
+        super().__init__()
+        self.fishes = SurvivalDomain.Fish.create_objs([1], prefix="f")
+
+    @init
+    def init(self):
+        at = []
+        return at
+
+    @goal
+    def goal(self):
+        return [self.fish_cooked(self.fishes[0])]
 ```

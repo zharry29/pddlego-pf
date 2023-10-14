@@ -39,8 +39,8 @@
   )
 
   (:action escape_island
-        :parameters (?p - person)
-        :precondition (and (exists (?r - raft) (has ?p ?r)))
+        :parameters (?p - person ?r - raft)
+        :precondition (and (exists ?r) (has ?p ?r))
         :effect (island_escaped)
   )
 )

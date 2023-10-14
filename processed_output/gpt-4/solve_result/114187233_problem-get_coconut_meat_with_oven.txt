@@ -1,1 +1,4 @@
-Error: Missing close parentheses
+drain ('coconut-1', 'screwdriver-1')
+smash ('coconut-1', 'screwdriver-1')
+remove-meat ('coconut-1', 'screwdriver-1')
+bake ('coconut-1')

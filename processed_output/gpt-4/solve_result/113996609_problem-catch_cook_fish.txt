@@ -1,1 +1,3 @@
-Error: unhashable type: 'list'
+catch_fish ('john', 'salmon', 'stick')
+start_fire ('john', 'water_side', 'stick')
+cook_fish ('john', 'salmon', 'stick', 'water_side')

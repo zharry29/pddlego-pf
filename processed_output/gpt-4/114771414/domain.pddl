@@ -18,7 +18,7 @@
 )
 (:action hunt
 	:parameters (?animals)
-	:precondition 
+	:precondition ()
 	:effect (and 
 		(killed ?animals)
 	)

@@ -1,1 +1,1 @@
-Error: unhashable type: 'list'
+clean_water ('john', 'pond_water', 'cloth')

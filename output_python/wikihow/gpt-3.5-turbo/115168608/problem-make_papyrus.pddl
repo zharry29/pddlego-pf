@@ -1,0 +1,40 @@
+(define (problem p3-make-papyrus)
+  (:domain papyrus-making)
+  
+  (:objects
+    papyrus1 - object
+  )
+
+  (:init
+    (not (plant-available papyrus1))
+    (not (stalk-cut papyrus1))
+    (not (outer-layer-peeled papyrus1))
+    (not (inner-portion-cut papyrus1))
+    (not (strips-placed-water papyrus1))
+    (not (strips-laid-out papyrus1))
+    (not (sheets-flattened papyrus1))
+    (not (sheets-polished papyrus1))
+    (not (paper-cut papyrus1))
+    (not (strips-dipped papyrus1))
+    (not (strips-laid-vertically papyrus1))
+    (not (strips-laid-horizontally papyrus1))
+    (not (paper-smoothed papyrus1))
+    (not (paper-dried papyrus1))
+  )
+
+  (:goal
+    (and (stalk-cut papyrus1)
+         (outer-layer-peeled papyrus1)
+         (inner-portion-cut papyrus1)
+         (strips-placed-water papyrus1)
+         (strips-laid-out papyrus1)
+         (sheets-flattened papyrus1)
+         (sheets-polished papyrus1)
+         (paper-cut papyrus1)
+         (strips-dipped papyrus1)
+         (strips-laid-vertically papyrus1)
+         (strips-laid-horizontally papyrus1)
+         (paper-smoothed papyrus1)
+         (paper-dried papyrus1))
+  )
+)

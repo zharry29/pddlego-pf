@@ -1,27 +1,30 @@
 (define (domain lock-picking)
   (:requirements :strips)
+
+  (:types
+    car - object
+    user - object)
+
   (:predicates 
-    (locked ?x)
-    (unlocked ?x)
-    (car-door ?x)
-    (easy-lock ?x)
-    (hard-lock ?x)
-    (has-tool ?x))
+    (locked ?x - car)
+    (unlocked ?x - car)
+    (car-door ?x - car)
+    (easy-lock ?x - car)
+    (hard-lock ?x - car)
+    (has-tool ?x - user))
     
   (:action pick-car-lock
-    :parameters (?d)
-    :precondition (and (car-door ?d) (locked ?d) (has-tool slim-jim))
+    :parameters (?d - car ?u -user)
+    :precondition (and (car-door ?d) (locked ?d) (has-tool ?u))
     :effect (and (unlocked ?d) (not (locked ?d))))
     
   (:action pick-easy-lock
-    :parameters (?l)
-    :precondition (and (easy-lock ?l) (locked ?l) (has-tool pick-set))
+    :parameters (?l - car)
+    :precondition (and (easy-lock ?l) (locked ?l) (has-tool ?u))
     :effect (and (unlocked ?l) (not (locked ?l))))
 
   (:action pick-hard-lock
-    :parameters (?l)
-    :precondition (and (hard-lock ?l) (locked ?l) (has-tool pick-set))
+    :parameters (?l - car)
+    :precondition (and (hard-lock ?l) (locked ?l) (has-tool ?u))
     :effect (and (unlocked ?l) (not (locked ?l))))
 )
-```
-This domain file defines three actions `pick-car-lock`, `pick-easy-lock` and `pick-hard-lock`. Because each of these as an equivalent unlock action, all need a tool and a lock (car-door, easy-lock, hard-lock)

@@ -1,5 +1,5 @@
 (define (domain survival)
-  (:requirements :typing :fluents)
+  (:requirements :typing)
   (:types 
     location water container
   )
@@ -29,8 +29,8 @@
   
   (:action drink
     :parameters (?water - water)
-    :precondition (and (has ?water) (drinkable ?water)
-    :effect (increase (hydration) 10))
+    :precondition (and (has ?water) (drinkable ?water))
+    :effect (increase (hydration) 10)
   )
   
   (:action sleep

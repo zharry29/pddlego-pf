@@ -1,1 +1,6 @@
-Error: Running time exceeds 30 seconds
+choose-food ('hotdog')
+choose-food ('tape')
+choose-food ('measure')
+throw-food ('hotdog', 'kitchen')
+throw-food ('tape', 'kitchen')
+throw-food ('measure', 'kitchen')

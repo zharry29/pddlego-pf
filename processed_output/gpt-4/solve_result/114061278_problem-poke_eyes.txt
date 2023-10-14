@@ -1,1 +1,1 @@
-Error: Requirement :conditional-effects not supported
+Error: Predicate have redefined

@@ -1,41 +1,44 @@
-(define (domain war-survival)
-  (:requirements :strips :typing)
-  (:types resource place - object
-          area - place
-          weapon food supply medicine - resource
-          person - object)
-  (:predicates 
-    (at ?obj - object ?place - place)
-    (has ?person - person ?resource - resource)
-    (can-use ?person - person ?weapon - weapon)
-    (alive ?person - person)
-    (healthy ?person - person)
-    (safe ?place - place)
-    (clean ?person - person)
-    (protected ?person - person)
-    (hidden ?person - person)
-    (trapped ?person - person)
-    (raining)
-    (can-drink ?person - person)
-    (can-eat ?person - person ?food - food)
-    (has-id ?person - person)
-    (can-escape ?person - person ?place - place)
-    (can-defend ?person - person ?place - place)
-    (can-hunt ?person - person)
-    (can-fish ?person - person)
-    (has-hygiene ?person - person)
-    (edible ?place - place ?food - food)
-    (clean-water ?place - place)
-    (purified ?person - person ?water - resource)
-    (is-contaminated ?water - resource)
-    (water-source ?place - place)
-    (healthy-food ?place - place ?resource - resource)
-    (fresh-food ?place - place ?resource - resource)
-    (nutrient-dense ?food - food)
-    (positive-mindset ?person - person)
-  )
-  (:action move
-    :parameters (?person - person ?from - place ?to - place)
-    :precondition (and (at ?person ?from) (alive ?person) (safe ?to))
-    :effect (and (not (at ?person ?from)) (at ?person ?to))
-  )
+(define (domain detective)
+(:requirements :strips :typing)
+(:types object)
+(:predicates
+    (bag ?x)
+    (hasPockets ?x)
+    (backupBag ?x)
+    (gear ?x)
+    (alias ?a)
+    (disguise ?d)
+    (costume ?c)
+    (headgear ?h)
+    (accessory ?a)
+    (badge ?b)
+    (notebook ?n)
+    (fingerprintingKit ?f)
+    (evidenceKit ?e)
+    (walkieTalkies ?w)
+    (partner ?p)
+)
+
+(:action assemble-disguises
+    :parameters 
+    (:alias ?a - object)
+    :effect (and 
+               (disguise ?a)))
+
+(:action assemble-detectiveKit
+    :parameters ()
+    :effect (and 
+                (gear ?g)))
+
+(:action buy-bag
+    :parameters ()
+    :effect (and  
+                (bag ?b)))
+
+(:action get-all-stationery
+    :parameters ()
+    :effect (and 
+               (notebook ?n)
+               (fingerprintingKit ?f)
+               (evidenceKit ?e)
+               (walkieTalkies ?w))))
