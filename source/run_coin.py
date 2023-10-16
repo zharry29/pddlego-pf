@@ -21,11 +21,10 @@ env = TextWorldExpressEnv(envStepLimit=100)
 NUM_LOCATIONS = 5
 env.load(gameName="coin", gameParams=f"numLocations={NUM_LOCATIONS},numDistractorItems=0,includeDoors=1,limitInventorySize=0")
 
-@backoff.on_exception(backoff.expo, (ConnectionResetError))
+@backoff.on_exception(backoff.expo, (ConnectionResetError, requests.exceptions.ConnectionError))
 def post_pddl(data):
     return requests.post('http://solver.planning.domains/solve',
                         verify=False, json=data).json()
-
 
 def llm_direct(past_prompt, obs, valid_actions):
     if not past_prompt:
@@ -45,7 +44,7 @@ def llm_direct(past_prompt, obs, valid_actions):
     prompt += [
         {"role": "assistant", "content": taken_action},
     ]
-    return prompt, taken_action
+    return prompt, [taken_action]
 
 def llm_pddl(past_prompt, obs, valid_actions):
     if not past_prompt:
@@ -71,7 +70,16 @@ def llm_pddl(past_prompt, obs, valid_actions):
 
     #print(output)
     def parse(output):
-        return output[output.find('('):].split("```")[0].strip()
+        processed_output = []
+        begin = False
+        for line in output.split("\n"):
+            if line.startswith("(define "):
+                begin = True
+            if begin:
+                processed_output.append(line)
+            if line.startswith(")"):
+                break
+        return "\n".join(processed_output)
     #raise SystemExit
     df = open("coin_df.pddl", "r").read()
     pf = parse(output)
@@ -83,7 +91,10 @@ def llm_pddl(past_prompt, obs, valid_actions):
         'problem': pf}
     resp = post_pddl(data)
     #print(resp)
-    actions = resp['result']['plan']
+    try:
+        actions = resp['result']['plan']
+    except KeyError:
+        return prompt, []
     #print(actions)
     if isinstance(actions[0], str):
         actions.remove('(reach-goal)')
@@ -98,22 +109,20 @@ def llm_pddl(past_prompt, obs, valid_actions):
         # open door action
         # open_door l1
         elif "(open_door " in action:
-            at_location = ""
+            _, source, target = action.replace("(", "").replace(")", "").split(" ")
             direction = ""
             for line in pf.split("\n"):
-                if "(at " in line:
-                    at_location = line.split("(at ")[1].split(")")[0]
                 if "(connected" in line:
                     loc_source = line.split("(connected ")[1].split(" ")[0]
                     loc_target = line.split("(connected ")[1].split(" ")[1]
-                    if loc_source == at_location:
+                    if loc_source == source and loc_target == target:
                         direction = line.split("(connected ")[1].split(" ")[2].split(")")[0]
                         break
             action = "open door to " + direction
         return action
-    #print(actions)
+    print(actions)
     actions = list(map(map_actions, actions))
-    #print(actions)
+    print(actions)
     #raise SystemExit
 
     #taken_action = actions[0]
@@ -126,7 +135,8 @@ elif args.method == "pddl":
 
 # Then, randomly generate and play 10 games within the defined parameters
 steps_to_success = []
-for episode_id in range(3,4):
+for episode_id in range(0,10):
+#for episode_id in [9]:
     # First step
     obs, infos = env.reset(seed=episode_id, gameFold="train", generateGoldPath=True)
     print("Gold path: " + str(env.getGoldActionSequence()))
@@ -153,14 +163,26 @@ for episode_id in range(3,4):
             valid_actions = sorted(infos['validActions'])
             valid_actions.remove('look around')
             valid_actions.remove('inventory')
-            # Check action queue for remaining actions
-            if not action_queue:
-                if obs_queue:
-                    brief_obs = "\n".join(obs_queue)
-                    obs_queue = []
-                past_prompt, actions = llm(past_prompt, brief_obs, valid_actions)
-                action_queue += actions
-            taken_action = action_queue.pop(0)
+            if args.method == "random":
+                taken_action = random.choice(valid_actions)
+            else:
+                # Check action queue for remaining actions
+                if not action_queue:
+                    if obs_queue:
+                        brief_obs = "\n".join(obs_queue)
+                        obs_queue = []
+                    past_prompt, actions = llm(past_prompt, brief_obs, valid_actions)
+                    action_queue += actions
+                if action_queue:
+                    taken_action = action_queue.pop(0)
+                    # if planned action is invalid, execute a random action
+                    if taken_action not in valid_actions:
+                        print("Invalid action: " + taken_action, ". Taking random action")
+                        taken_action = random.choice(valid_actions)
+                # if no plan can be found, execute a random action
+                else:
+                    print("No plan is found. ", "Taking random action")
+                    taken_action = random.choice(valid_actions)
 
         # Take that action
         obs, reward, done, infos = env.step(taken_action)
