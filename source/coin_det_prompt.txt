@@ -49,7 +49,7 @@ Your always start in the kitchen and your task is always to go to a location you
 Let's work with an example. Say you're given this observation:
 You are in the kitchen. To the South you see a closed wooden door. To the East you see a closed glass door.
 
-You will modify the above problem file using add, replace, and delete operations (in a JSON format):
+You will modify the above problem file using add, replace, and delete operations (in a JSON format). You SHOULD NOT provide a problem file directly.
 {
   "objects": {
     "add": [
@@ -75,27 +75,29 @@ At this point you will gain further observations:
 Action: open door to south
 You open the wooden door, revealing the pantry.
 Action: move south
-You are in the backyard. Through an open sliding patio door, to the North you see the kitchen. To the West you see a closed screen door.
+You are in the pantry. Through an open sliding patio door, to the North you see the kitchen. To the West you see a closed screen door.
 
-You will modify the above problem file using add, replace, and delete operations (in a JSON format):
+You will modify the above problem file using add, replace, and delete operations (in a JSON format). You SHOULD NOT provide a problem file directly.
 {
   "objects": {
     "add": [
       "loc3 - location"
     ],
     "replace": {
-      "loc1 - location": "backyard - location",
+      "loc1 - location": "pantry - location"
     },
     "delete": []
   },
   "init": {
     "add": [
-      "(connected backyard kitchen north)",
-      "(connected backyard loc3 west)",
-      "(closed_door backyard loc3)"
+      "(visited pantry)",
+      "(connected pantry kitchen north)",
+      "(connected pantry loc3 west)",
+      "(closed_door pantry loc3)"
     ],
     "replace": {
-      "(connected kitchen loc1 south)": "(connected kitchen backyard south)"
+      "(at kitchen)": "(at pantry)",
+      "(connected kitchen loc1 south)": "(connected kitchen pantry south)"
     },
     "delete": [
       "(closed_door kitchen loc1)"

@@ -14,7 +14,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--model', default='gpt-4', type=str, help='OpenAI model name.')
 parser.add_argument('--method', default='', required=True, type=str, help='direct|pddl')
 parser.add_argument('--det', action='store_true', help='Whether to deterministically edit the problem file. Assumes method is pddl.')
-parser.add_argument('--overwrite_cache', action='store_true', help='Whether to overwrite the cache.')
+parser.add_argument('--oc', action='store_true', help='Whether to overwrite the cache.')
 
 args = parser.parse_args()
 
@@ -22,7 +22,8 @@ args = parser.parse_args()
 env = TextWorldExpressEnv(envStepLimit=100)
 
 # Set the game generator to generate a particular game (cookingworld, twc, or coin)
-NUM_LOCATIONS = 5
+NUM_LOCATIONS = 11
+MAX_STEPS = 50
 env.load(gameName="coin", gameParams=f"numLocations={NUM_LOCATIONS},numDistractorItems=0,includeDoors=1,limitInventorySize=0")
 
 @backoff.on_exception(backoff.expo, (ConnectionResetError, requests.exceptions.ConnectionError))
@@ -99,7 +100,7 @@ def llm_pddl(past_prompt, obs, valid_actions, prev_pf):
         new_wording = "Your task is to go to a location you have not been yet. Generate a problem file."
     else:
         prompt_file = "coin_det_prompt.txt"
-        new_wording = "You will modify the above problem file using add, delate, and rephace operations (in a JSON format)."
+        new_wording = "You will modify the above problem file using add, delate, and rephace operations (in a JSON format). You SHOULD NOT provide a problem file directly."
     if not past_prompt:
         prompt = [
             {"role": "user", "content": open(prompt_file, "r").read() + obs + "\n\n" + new_wording},
@@ -116,7 +117,7 @@ def llm_pddl(past_prompt, obs, valid_actions, prev_pf):
         pickle.dump({}, open("cache.pkl", "wb"))
         cache = pickle.load(open("cache.pkl", "rb"))
     try:
-        if not args.overwrite_cache:
+        if not args.oc:
             output = cache[(NUM_LOCATIONS, episode_id, step_id)]
         else:
             raise KeyError
@@ -140,13 +141,13 @@ def llm_pddl(past_prompt, obs, valid_actions, prev_pf):
     #raise SystemExit
     df = open("coin_df.pddl", "r").read()
     if args.det:
-        #print(output)
+        print(output)
         out_json = json.loads(output)
         pf = apply_edit(prev_pf, out_json)
         prev_pf = pf
     else:
         pf = parse(output)
-    #print(pf)
+    print(pf)
     #raise SystemExit
     if not args.det:
         prompt += [
@@ -200,15 +201,10 @@ def llm_pddl(past_prompt, obs, valid_actions, prev_pf):
     #taken_action = actions[0]
     return prompt, actions, prev_pf
 
-if args.method == "direct":
-    llm = llm_direct
-elif args.method == "pddl":
-    llm = llm_pddl
-
 # Then, randomly generate and play 10 games within the defined parameters
 steps_to_success = []
-#for episode_id in range(0,10):
-for episode_id in [3]:
+for episode_id in range(0,10):
+#for episode_id in [5]:
     # First step
     obs, infos = env.reset(seed=episode_id, gameFold="train", generateGoldPath=True)
     print("Gold path: " + str(env.getGoldActionSequence()))
@@ -227,7 +223,7 @@ for episode_id in [3]:
     obs_queue = []
     if args.det:
         prev_pf = open("coin_init_pf.pddl", "r").read()
-    for step_id in range(0, 10):
+    for step_id in range(0, MAX_STEPS):
         print("Step " + str(step_id))
         # If there is a coin, just take it
         if " coin" in obs:
@@ -245,7 +241,10 @@ for episode_id in [3]:
                     if obs_queue:
                         brief_obs = "\n".join(obs_queue)
                         obs_queue = []
-                    past_prompt, actions, prev_pf = llm(past_prompt, brief_obs, valid_actions, prev_pf)
+                    if args.method == "direct":
+                        past_prompt, actions = llm_direct(past_prompt, brief_obs, valid_actions)
+                    elif args.method == "pddl":
+                        past_prompt, actions, prev_pf = llm_pddl(past_prompt, brief_obs, valid_actions, prev_pf)
                     action_queue += actions
                 if action_queue:
                     taken_action = action_queue.pop(0)
