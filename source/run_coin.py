@@ -9,6 +9,7 @@ from pathlib import Path
 import pickle
 import backoff
 import json
+from fix_json import fix_json
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--model', default='gpt-4', type=str, help='OpenAI model name.')
@@ -100,13 +101,21 @@ def llm_pddl(past_prompt, obs, valid_actions, prev_pf):
         new_wording = "Your task is to go to a location you have not been yet. Generate a problem file."
     else:
         prompt_file = "coin_det_prompt.txt"
-        new_wording = "You will modify the above problem file using add, delate, and rephace operations (in a JSON format). You SHOULD NOT provide a problem file directly."
+        new_wording = "You will modify the above problem file using add, delate, and replace operations (in a JSON format). You SHOULD NOT provide a problem file directly."
     if not past_prompt:
         prompt = [
             {"role": "user", "content": open(prompt_file, "r").read() + obs + "\n\n" + new_wording},
         ]
     else:
-        prompt = past_prompt + [
+        prompt = []
+        for i, message in enumerate(past_prompt):
+            # remove previous display of PF
+            if i < len(past_prompt) - 2 and message["content"].startswith("After your previous edits"):
+                continue
+            if i < len(past_prompt) - 2 and message["content"] == "OK, I will base my edit on this problem file.":
+                continue
+            prompt.append(message)
+        prompt += [
             {"role": "user", "content": obs + "\n\n" + new_wording},
         ]
     #print(prompt)
@@ -142,7 +151,10 @@ def llm_pddl(past_prompt, obs, valid_actions, prev_pf):
     df = open("coin_df.pddl", "r").read()
     if args.det:
         print(output)
-        out_json = json.loads(output)
+        try:
+            out_json = json.loads(output)
+        except json.decoder.JSONDecodeError:
+            out_json = json.loads(fix_json(output))
         pf = apply_edit(prev_pf, out_json)
         prev_pf = pf
     else:
@@ -156,18 +168,18 @@ def llm_pddl(past_prompt, obs, valid_actions, prev_pf):
     else:
         prompt += [
             {"role": "assistant", "content": output},
-            {"role": "user", "content": "After your edits, the current problem file is:\n\n" + pf + "\n\n" + "Understood?"},
-            {"role": "assistant", "content": "Yes, please continue."},
+            {"role": "user", "content": "After your previous edits, the current problem file is:\n\n" + pf + "\n\n" + "Please make more edits based on this problem file."},
+            {"role": "assistant", "content": "OK, I will base my edit on this problem file."},
         ]
 
     data = {'domain': df,
         'problem': pf}
     resp = post_pddl(data)
     #print(resp)
-    try:
-        actions = resp['result']['plan']
-    except KeyError:
-        return prompt, []
+    #try:
+    actions = resp['result']['plan']
+    #except KeyError:
+    #    return prompt, []
     #print(actions)
     if isinstance(actions[0], str):
         actions.remove('(reach-goal)')
@@ -203,8 +215,8 @@ def llm_pddl(past_prompt, obs, valid_actions, prev_pf):
 
 # Then, randomly generate and play 10 games within the defined parameters
 steps_to_success = []
-for episode_id in range(0,10):
-#for episode_id in [5]:
+#for episode_id in range(0,10):
+for episode_id in [1]:
     # First step
     obs, infos = env.reset(seed=episode_id, gameFold="train", generateGoldPath=True)
     print("Gold path: " + str(env.getGoldActionSequence()))
