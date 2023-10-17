@@ -58,6 +58,12 @@ def llm_pddl(past_prompt, obs, valid_actions, prev_pf):
         output = []
         o_start = False
         i_start = False
+        # Manually cascade location replace
+        loc_replace = {}
+        for s,t in edit_json["objects"]["replace"].items():
+            if s.endswith(" - location") and t.endswith(" - location"):
+                loc_replace[s[:-len(" - location")]] = t[:-len(" - location")]
+
         for line in prev_pf.split("\n"):
             if "(:object" in line:
                 o_start = True
@@ -93,7 +99,14 @@ def llm_pddl(past_prompt, obs, valid_actions, prev_pf):
                     output.append(line)
             else:
                 output.append(line)
-        return "\n".join(output)
+        
+        output_str = "\n".join(output)
+        # Manually cascade location replace using a crude replace
+        #print(loc_replace)
+        for s, t in loc_replace.items():
+            output_str = output_str.replace(s, t)
+        
+        return output_str
 
 
     if not args.det:
@@ -216,7 +229,7 @@ def llm_pddl(past_prompt, obs, valid_actions, prev_pf):
 # Then, randomly generate and play 10 games within the defined parameters
 steps_to_success = []
 #for episode_id in range(0,10):
-for episode_id in [1]:
+for episode_id in [8]:
     # First step
     obs, infos = env.reset(seed=episode_id, gameFold="train", generateGoldPath=True)
     print("Gold path: " + str(env.getGoldActionSequence()))
