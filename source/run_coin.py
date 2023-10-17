@@ -1,16 +1,20 @@
 import requests, sys
 sys.path.insert(1, '../../TextWorldExpress')
 import random
+random.seed(29)
 from textworld_express import TextWorldExpressEnv
 from run_gpt import run_chatgpt
 import argparse
 from pathlib import Path
 import pickle
 import backoff
+import json
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--model', default='gpt-4', type=str, help='OpenAI model name.')
 parser.add_argument('--method', default='', required=True, type=str, help='direct|pddl')
+parser.add_argument('--det', action='store_true', help='Whether to deterministically edit the problem file. Assumes method is pddl.')
+parser.add_argument('--overwrite_cache', action='store_true', help='Whether to overwrite the cache.')
 
 args = parser.parse_args()
 
@@ -46,23 +50,76 @@ def llm_direct(past_prompt, obs, valid_actions):
     ]
     return prompt, [taken_action]
 
-def llm_pddl(past_prompt, obs, valid_actions):
+def llm_pddl(past_prompt, obs, valid_actions, prev_pf):
+    def apply_edit(prev_pf, edit_json):
+        #print(prev_pf)
+        output = []
+        o_start = False
+        i_start = False
+        for line in prev_pf.split("\n"):
+            if "(:object" in line:
+                o_start = True
+                output.append(line)
+            elif o_start and line.strip() == ")":
+                o_start = False
+                for to_add in edit_json["objects"]["add"]:
+                    output.append("    " + to_add)
+                output.append(line)
+            elif o_start:
+                if line.strip() in edit_json["objects"]["replace"]:
+                    line = edit_json["objects"]["replace"][line.strip()]
+                    output.append("    " + line)
+                elif line.strip() in edit_json["objects"]["delete"]:
+                    continue
+                else:
+                    output.append(line)
+            elif "(:init" in line:
+                i_start = True
+                output.append(line)
+            elif i_start and line.strip() == ")":
+                i_start = False
+                for to_add in edit_json["init"]["add"]:
+                    output.append("    " + to_add)
+                output.append(line)
+            elif i_start:
+                if line.strip() in edit_json["init"]["replace"]:
+                    line = edit_json["init"]["replace"][line.strip()]
+                    output.append("    " + line)
+                elif line.strip() in edit_json["init"]["delete"]:
+                    continue
+                else:
+                    output.append(line)
+            else:
+                output.append(line)
+        return "\n".join(output)
+
+
+    if not args.det:
+        prompt_file = "coin_prompt.txt"
+        new_wording = "Your task is to go to a location you have not been yet. Generate a problem file."
+    else:
+        prompt_file = "coin_det_prompt.txt"
+        new_wording = "You will modify the above problem file using add, delate, and rephace operations (in a JSON format)."
     if not past_prompt:
         prompt = [
-            {"role": "user", "content": open("coin_prompt.txt", "r").read() + obs + "\n\n" + "Your task is to go to a location you have not been yet. Generate a problem file."},
+            {"role": "user", "content": open(prompt_file, "r").read() + obs + "\n\n" + new_wording},
         ]
     else:
         prompt = past_prompt + [
-            {"role": "user", "content": obs + "\n\n" + "Your task is to go to a location you have not been yet. Generate a problem file."},
+            {"role": "user", "content": obs + "\n\n" + new_wording},
         ]
     #print(prompt)
+    #raise SystemExit()
     try:
         cache = pickle.load(open("cache.pkl", "rb"))
     except FileNotFoundError:
         pickle.dump({}, open("cache.pkl", "wb"))
         cache = pickle.load(open("cache.pkl", "rb"))
     try:
-        output = cache[(NUM_LOCATIONS, episode_id, step_id)]
+        if not args.overwrite_cache:
+            output = cache[(NUM_LOCATIONS, episode_id, step_id)]
+        else:
+            raise KeyError
     except KeyError:
         output = run_chatgpt(prompt, model=args.model, temperature=0)
         cache[(NUM_LOCATIONS, episode_id, step_id)] = output
@@ -82,11 +139,26 @@ def llm_pddl(past_prompt, obs, valid_actions):
         return "\n".join(processed_output)
     #raise SystemExit
     df = open("coin_df.pddl", "r").read()
-    pf = parse(output)
-    print(pf)
-    prompt += [
-        {"role": "assistant", "content": pf},
-    ]
+    if args.det:
+        #print(output)
+        out_json = json.loads(output)
+        pf = apply_edit(prev_pf, out_json)
+        prev_pf = pf
+    else:
+        pf = parse(output)
+    #print(pf)
+    #raise SystemExit
+    if not args.det:
+        prompt += [
+            {"role": "assistant", "content": pf},
+        ]
+    else:
+        prompt += [
+            {"role": "assistant", "content": output},
+            {"role": "user", "content": "After your edits, the current problem file is:\n\n" + pf + "\n\n" + "Understood?"},
+            {"role": "assistant", "content": "Yes, please continue."},
+        ]
+
     data = {'domain': df,
         'problem': pf}
     resp = post_pddl(data)
@@ -126,7 +198,7 @@ def llm_pddl(past_prompt, obs, valid_actions):
     #raise SystemExit
 
     #taken_action = actions[0]
-    return prompt, actions
+    return prompt, actions, prev_pf
 
 if args.method == "direct":
     llm = llm_direct
@@ -135,8 +207,8 @@ elif args.method == "pddl":
 
 # Then, randomly generate and play 10 games within the defined parameters
 steps_to_success = []
-for episode_id in range(0,10):
-#for episode_id in [9]:
+#for episode_id in range(0,10):
+for episode_id in [3]:
     # First step
     obs, infos = env.reset(seed=episode_id, gameFold="train", generateGoldPath=True)
     print("Gold path: " + str(env.getGoldActionSequence()))
@@ -148,11 +220,13 @@ for episode_id in range(0,10):
         # Only keep where you are and location informtion
         else:
             return obs.split('\n')[0].split(". ")[0] + ". " + obs.split('\n')[1]
-    brief_obs = summarize_obs(obs)
+    brief_obs = "Action: look around\n" + summarize_obs(obs)
     print(brief_obs)
     past_prompt = []
     action_queue = []
     obs_queue = []
+    if args.det:
+        prev_pf = open("coin_init_pf.pddl", "r").read()
     for step_id in range(0, 10):
         print("Step " + str(step_id))
         # If there is a coin, just take it
@@ -171,7 +245,7 @@ for episode_id in range(0,10):
                     if obs_queue:
                         brief_obs = "\n".join(obs_queue)
                         obs_queue = []
-                    past_prompt, actions = llm(past_prompt, brief_obs, valid_actions)
+                    past_prompt, actions, prev_pf = llm(past_prompt, brief_obs, valid_actions, prev_pf)
                     action_queue += actions
                 if action_queue:
                     taken_action = action_queue.pop(0)
@@ -186,7 +260,7 @@ for episode_id in range(0,10):
 
         # Take that action
         obs, reward, done, infos = env.step(taken_action)
-        brief_obs = summarize_obs(obs)
+        brief_obs = "Action: " + taken_action + "\n" + summarize_obs(obs)
         obs_queue.append(brief_obs)
 
         # Display action and the game's feedback.

@@ -1,0 +1,107 @@
+You will continue to build a PDDL representation of an environment while exploring it. We will be using the following domain file:
+(define (domain environment)
+  (:requirements :strips :typing :negative-preconditions :disjunctive-preconditions)
+  (:types
+    location
+    direction
+  )
+  (:predicates
+    (at ?loc - location)
+    (visited ?loc - location)
+    (connected ?loc1 - location ?loc2 - location ?dir - direction)
+    (closed_door ?loc1 - location ?loc2 - location)
+  )
+
+  (:action move
+    :parameters (?loc1 - location ?loc2 - location ?dir - direction)
+    :precondition (and (at ?loc1) (connected ?loc1 ?loc2 ?dir) (not (closed_door ?loc1 ?loc2)))
+    :effect (and (not (at ?loc1)) (at ?loc2))
+  )
+
+  (:action open_door
+    :parameters (?loc1 - location ?loc2 - location)
+    :precondition (and (at ?loc1) (closed_door ?loc1 ?loc2))
+    :effect (not (closed_door ?loc1 ?loc2))
+  )
+)
+
+Your always start in the kitchen and your task is always to go to a location you have not been yet. Therefore, you will start with the following problem file.
+(define (problem exploration)
+  (:domain environment)
+  (:objects
+    kitchen - location
+    north south east west - direction
+  )
+  (:init
+    (at kitchen)
+    (visited kitchen)
+  )
+  (:goal 
+    (exists (?x - location)
+        (and
+            (not (visited ?x))
+            (at ?x)
+        )
+    )
+  )
+)
+
+Let's work with an example. Say you're given this observation:
+You are in the kitchen. To the South you see a closed wooden door. To the East you see a closed glass door.
+
+You will modify the above problem file using add, replace, and delete operations (in a JSON format):
+{
+  "objects": {
+    "add": [
+      "loc1 - location",
+      "loc2 - location"
+    ],
+    "replace": {},
+    "delete": []
+  },
+  "init": {
+    "add": [
+      "(connected kitchen loc1 south)",
+      "(closed_door kitchen loc1)",
+      "(connected kitchen loc2 east)",
+      "(closed_door kitchen loc2)"
+    ],
+    "replace": {},
+    "delete": []
+  }
+}
+
+At this point you will gain further observations:
+Action: open door to south
+You open the wooden door, revealing the pantry.
+Action: move south
+You are in the backyard. Through an open sliding patio door, to the North you see the kitchen. To the West you see a closed screen door.
+
+You will modify the above problem file using add, replace, and delete operations (in a JSON format):
+{
+  "objects": {
+    "add": [
+      "loc3 - location"
+    ],
+    "replace": {
+      "loc1 - location": "backyard - location",
+    },
+    "delete": []
+  },
+  "init": {
+    "add": [
+      "(connected backyard kitchen north)",
+      "(connected backyard loc3 west)",
+      "(closed_door backyard loc3)"
+    ],
+    "replace": {
+      "(connected kitchen loc1 south)": "(connected kitchen backyard south)"
+    },
+    "delete": [
+      "(closed_door kitchen loc1)"
+    ]
+  }
+}
+
+
+Now, let's start afresh. 
