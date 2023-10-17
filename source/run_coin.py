@@ -29,8 +29,9 @@ env.load(gameName="coin", gameParams=f"numLocations={NUM_LOCATIONS},numDistracto
 
 @backoff.on_exception(backoff.expo, (ConnectionResetError, requests.exceptions.ConnectionError))
 def post_pddl(data):
-    return requests.post('http://solver.planning.domains/solve',
-                        verify=False, json=data).json()
+    resp = requests.post('http://solver.planning.domains/solve',
+                        verify=False, json=data, timeout=5).json()
+    return resp
 
 def llm_direct(past_prompt, obs, valid_actions):
     if not past_prompt:
@@ -52,7 +53,7 @@ def llm_direct(past_prompt, obs, valid_actions):
     ]
     return prompt, [taken_action]
 
-def llm_pddl(past_prompt, obs, valid_actions, prev_pf):
+def llm_pddl(past_prompt, obs, valid_actions, prev_pf=""):
     def apply_edit(prev_pf, edit_json):
         #print(prev_pf)
         output = []
@@ -227,8 +228,8 @@ def llm_pddl(past_prompt, obs, valid_actions, prev_pf):
 
 # Then, randomly generate and play 10 games within the defined parameters
 steps_to_success = []
-#for episode_id in range(0,10):
-for episode_id in [8]:
+for episode_id in range(0,10):
+#for episode_id in [8]:
     # First step
     obs, infos = env.reset(seed=episode_id, gameFold="train", generateGoldPath=True)
     print("Gold path: " + str(env.getGoldActionSequence()))
@@ -268,18 +269,29 @@ for episode_id in [8]:
                     if args.method == "direct":
                         past_prompt, actions = llm_direct(past_prompt, brief_obs, valid_actions)
                     elif args.method == "pddl":
-                        past_prompt, actions, prev_pf = llm_pddl(past_prompt, brief_obs, valid_actions, prev_pf)
+                        if args.det:
+                            past_prompt, actions, prev_pf = llm_pddl(past_prompt, brief_obs, valid_actions, prev_pf)
+                        else:
+                            try:
+                                past_prompt, actions, _ = llm_pddl(past_prompt, brief_obs, valid_actions)
+                            except:
+                                steps_to_success.append(-1)
+                                break
                     action_queue += actions
                 if action_queue:
                     taken_action = action_queue.pop(0)
                     # if planned action is invalid, execute a random action
                     if taken_action not in valid_actions:
-                        raise ValueError("Invalid action")
+                        #raise ValueError("Invalid action")
+                        steps_to_success.append(-1)
+                        break
                         print("Invalid action: " + taken_action, ". Taking random action")
                         taken_action = random.choice(valid_actions)
                 # if no plan can be found, execute a random action
                 else:
-                    raise ValueError("No plan is found")
+                    #raise ValueError("No plan is found")
+                    steps_to_success.append(-1)
+                    break
                     print("No plan is found. ", "Taking random action")
                     taken_action = random.choice(valid_actions)
 
