@@ -102,7 +102,6 @@ def llm_pddl(past_prompt, obs, valid_actions, prev_pf):
         
         output_str = "\n".join(output)
         # Manually cascade location replace using a crude replace
-        #print(loc_replace)
         for s, t in loc_replace.items():
             output_str = output_str.replace(s, t)
         
@@ -275,10 +274,12 @@ for episode_id in [8]:
                     taken_action = action_queue.pop(0)
                     # if planned action is invalid, execute a random action
                     if taken_action not in valid_actions:
+                        raise ValueError("Invalid action")
                         print("Invalid action: " + taken_action, ". Taking random action")
                         taken_action = random.choice(valid_actions)
                 # if no plan can be found, execute a random action
                 else:
+                    raise ValueError("No plan is found")
                     print("No plan is found. ", "Taking random action")
                     taken_action = random.choice(valid_actions)
 
