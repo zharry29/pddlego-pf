@@ -1,5 +1,4 @@
 import requests, sys
-sys.path.insert(1, '../../TextWorldExpress')
 import random
 random.seed(29)
 from textworld_express import TextWorldExpressEnv
@@ -35,7 +34,7 @@ def post_pddl(data):
 
 def llm_direct(past_prompt, obs, valid_actions):
     if not past_prompt:
-        prompt = [
+        past_prompt = [
             {"role": "user", "content": "You will play a game where your goal is to collect a coin. I will provide you with a description of the environment, and you will take one of the valid actions. Ready?"},
             {"role": "assistant", "content": "Absolutely, I'm ready! Please describe the environment."},
         ]
