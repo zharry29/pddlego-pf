@@ -22,10 +22,16 @@ args = parser.parse_args()
 env = TextWorldExpressEnv(envStepLimit=100)
 
 # Set the game generator to generate a particular game (cookingworld, twc, or coin)
-NUM_LOCATIONS = 1
-NUM_INGREDIENTS = 1
-MAX_STEPS = 10
+NUM_LOCATIONS = 2
+NUM_INGREDIENTS = 2
+MAX_STEPS = 20
 env.load(gameName="cookingworld", gameParams=f"numLocations={NUM_LOCATIONS},numIngredients={NUM_INGREDIENTS},numDistractorItems=0,includeDoors=1,limitInventorySize=0")
+
+@backoff.on_exception(backoff.expo, (ConnectionResetError, requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout))
+def post_pddl(data):
+    resp = requests.post('http://solver.planning.domains/solve',
+                        verify=False, json=data, timeout=5).json()
+    return resp
 
 def llm_direct(past_prompt, obs, valid_actions):
     if not past_prompt:
@@ -51,33 +57,380 @@ def llm_direct(past_prompt, obs, valid_actions):
     return prompt, [taken_action]
 
 
+def run_pddl_solver(df,pf):
+    data = {'domain': df,
+        'problem': pf}
+    resp = post_pddl(data)
+    if resp["status"] == "error":
+        return []
+    actions = resp['result']['plan']
+    if isinstance(actions[0], str):
+        actions.remove('(reach-goal)')
+    elif isinstance(actions[0], dict):
+        actions = [x['name'] for x in actions]
+    return actions
+
+def space_to_underscore(s):
+    return s.replace(" ", "_")
+
+def underscore_to_space(s):
+    return s.replace("_", " ")
+
+def llm_pddl_cook(prev_pf, required_ingredients, required_tools, all_location_items, ingredient_states):
+    #new_wording = "You will modify the above problem file using add, delate, and replace operations (in a JSON format). You SHOULD NOT provide a problem file directly."
+    pf_lines = prev_pf.split("\n")
+    out_lines = []
+    for line in pf_lines:
+        out_lines.append(line)
+        if "(:objects" in line:
+            for ingredient in required_ingredients:
+                out_lines.append("    " + space_to_underscore(ingredient) + " - ingredient")
+            for tool in required_tools:
+                out_lines.append("    " + space_to_underscore(tool) + f" - {tool}")
+        elif "(:init" in line:
+            for ingredient in required_ingredients:
+                out_lines.append("    (have " + space_to_underscore(ingredient) + ")")
+            if "knife" in required_tools:
+                out_lines.append("    (have knife)")
+            for tool in required_tools:
+                for location, items in all_location_items.items():
+                    if tool in items:
+                        out_lines.append("    (obj_at " + space_to_underscore(tool) + " " + space_to_underscore(location) + ")")
+                        break
+        elif "(:goal" in line:
+            out_lines.append("    (and")
+            for state, ingredient in ingredient_states:
+                out_lines.append("        (" + state + " " + space_to_underscore(ingredient) + ")")
+            out_lines.append("    )")
+            out_lines.append("  )")
+            out_lines.append(")")
+            break
+    pf = "\n".join(out_lines)
+    print(pf)
+    df = open("cooking_df.pddl", "r").read()
+    actions = run_pddl_solver(df, pf)
+    print(actions)
+
+    def map_actions(action):
+        action = action.replace("(", "").replace(")", "")
+        if "use_toaster" in action:
+            action = "cook " + underscore_to_space(action.split(" ")[1]) + " in toaster"
+        elif "use_oven" in action:
+            action = "cook " + underscore_to_space(action.split(" ")[1]) + " in oven"
+        elif "use_stove" in action:
+            action = "cook " + underscore_to_space(action.split(" ")[1]) + " in stove"
+        else:
+            action = action.split(" ")[0] + " " + underscore_to_space(action.split(" ")[1])
+
+        return action
+    
+    actions = list(map(map_actions, actions))
+
+    return actions
+
+def llm_pddl_find(past_prompt, obs, prev_pf=""):
+    def apply_edit(prev_pf, edit_json):
+        output = []
+        o_start = False
+        i_start = False
+        # Manually cascade location replace
+        loc_replace = {}
+        for s,t in edit_json["objects"]["replace"].items():
+            if s.endswith(" - location") and t.endswith(" - location"):
+                loc_replace[s[:-len(" - location")]] = t[:-len(" - location")]
+        for line in prev_pf.split("\n"):
+            if "(:object" in line:
+                o_start = True
+                output.append(line)
+            elif o_start and line.strip() == ")":
+                o_start = False
+                for to_add in edit_json["objects"]["add"]:
+                    output.append("    " + to_add)
+                output.append(line)
+            elif o_start:
+                if line.strip() in edit_json["objects"]["replace"]:
+                    line = edit_json["objects"]["replace"][line.strip()]
+                    output.append("    " + line)
+                elif line.strip() in edit_json["objects"]["delete"]:
+                    continue
+                else:
+                    output.append(line)
+            elif "(:init" in line:
+                i_start = True
+                output.append(line)
+            elif i_start and line.strip() == ")":
+                i_start = False
+                for to_add in edit_json["init"]["add"]:
+                    output.append("    " + to_add)
+                output.append(line)
+            elif i_start:
+                if line.strip() in edit_json["init"]["replace"]:
+                    line = edit_json["init"]["replace"][line.strip()]
+                    output.append("    " + line)
+                elif line.strip() in edit_json["init"]["delete"]:
+                    continue
+                else:
+                    output.append(line)
+            else:
+                output.append(line)
+        
+        output_str = "\n".join(output)
+        # Manually cascade location replace using a crude replace
+        for s, t in loc_replace.items():
+            output_str = output_str.replace(s, t)
+        
+        return output_str
+
+    prompt_file = "coin_det_prompt.txt"
+    new_wording = "You will modify the above problem file using add, delate, and replace operations (in a JSON format). You SHOULD NOT provide a problem file directly."
+    if not past_prompt:
+        prompt = [
+            {"role": "user", "content": open(prompt_file, "r").read() + obs + "\n\n" + new_wording},
+        ]
+    else:
+        prompt = []
+        for i, message in enumerate(past_prompt):
+            # remove previous display of PF
+            if i < len(past_prompt) - 2 and message["content"].startswith("After your previous edits"):
+                continue
+            if i < len(past_prompt) - 2 and message["content"] == "OK, I will base my edit on this problem file.":
+                continue
+            prompt.append(message)
+        prompt += [
+            {"role": "user", "content": obs + "\n\n" + new_wording},
+        ]
+    #print(prompt)
+    #raise SystemExit()
+    cache_name = "cache_cooking.pkl"
+    try:
+        cache = pickle.load(open(cache_name, "rb"))
+    except FileNotFoundError:
+        pickle.dump({}, open(cache_name, "wb"))
+        cache = pickle.load(open(cache_name, "rb"))
+    try:
+        if not args.oc:
+            output = cache[(NUM_LOCATIONS, NUM_INGREDIENTS, episode_id, step_id)]
+        else:
+            raise KeyError
+    except KeyError:
+        output = run_chatgpt(prompt, model=args.model, temperature=0)
+        cache[(NUM_LOCATIONS, NUM_INGREDIENTS, episode_id, step_id)] = output
+        pickle.dump(cache, open(cache_name, "wb"))
+
+    #print(output)
+    #raise SystemExit
+    df = open("coin_df.pddl", "r").read()
+    print(output)
+    try:
+        out_json = json.loads(output)
+    except json.decoder.JSONDecodeError:
+        out_json = json.loads(fix_json(output))
+    pf = apply_edit(prev_pf, out_json)
+    prev_pf = pf
+    print(pf)
+    #raise SystemExit
+    if not args.det:
+        prompt += [
+            {"role": "assistant", "content": pf},
+        ]
+    else:
+        prompt += [
+            {"role": "assistant", "content": output},
+            {"role": "user", "content": "After your previous edits, the current problem file is:\n\n" + pf + "\n\n" + "Please make more edits based on this problem file."},
+            {"role": "assistant", "content": "OK, I will base my edit on this problem file."},
+        ]
+
+    actions = run_pddl_solver(df, pf)
+
+    def map_actions(action):
+        # move action
+        # (move kitchen corridor west)
+        if "(move " in action:
+            action = action.replace("(", "").replace(")", "").split(" ")
+            action = action[0] + " " + action[-1]
+        # open door action
+        # open_door l1
+        elif "(open_door " in action:
+            _, source, target = action.replace("(", "").replace(")", "").split(" ")
+            direction = ""
+            for line in pf.split("\n"):
+                if "(connected" in line:
+                    loc_source = line.split("(connected ")[1].split(" ")[0]
+                    loc_target = line.split("(connected ")[1].split(" ")[1]
+                    if loc_source == source and loc_target == target:
+                        direction = line.split("(connected ")[1].split(" ")[2].split(")")[0]
+                        break
+            action = "open door to " + direction
+        return action
+    #print(actions)
+    actions = list(map(map_actions, actions))
+    print(actions)
+    #raise SystemExit
+
+    #taken_action = actions[0]
+    return prompt, actions, prev_pf
+
+def parse_recipe(recipe):
+    ingredient_start = False
+    directions_start = False
+    ingredients = []
+    tools = []
+    ingredient_states = []
+    action_to_tool = {
+        "grill": "toaster",
+        "roast": "oven",
+        "fry": "stove",
+        "slice": "knife",
+        "chop": "knife",
+        "dice": "knife",
+    }
+    action_to_state = {
+        "grill": "grilled",
+        "roast": "roasted",
+        "fry": "fried",
+        "slice": "sliced",
+        "chop": "chopped",
+        "dice": "diced",
+    }
+    for line in recipe.split('\n'):
+        if line.startswith("Ingredients:"):
+            ingredient_start = True
+            continue
+        if line.startswith("Directions:"):
+            ingredient_start = False
+            directions_start = True
+            continue
+        if "prepare meal" in line:
+            directions_start = False
+            break
+        if ingredient_start and line.strip():
+            ingredients.append(line.strip())
+        if directions_start:
+            direction = line.strip()
+            action = direction.split(" the ")[0]
+            required_tool = action_to_tool[action]
+            ingredient = direction.split(" the ")[1]
+            assert ingredient in ingredients
+            tools.append(required_tool)
+            ingredient_states.append((action_to_state[action], ingredient))
+    return ingredients, tools, ingredient_states
+
+def get_location_items(obs):
+    prompt_file = "cooking_location_prompt.txt"
+    new_wording = "You should output a JSON with one key as the location. Only output the JSON; do not output anything else."
+    prompt = [
+        {"role": "user", "content": open(prompt_file, "r").read() + obs + "\n\n" + new_wording},
+    ]
+    output = run_chatgpt(prompt, model=args.model, temperature=0)
+    return json.loads(output)
+
+def get_container_items(obs):
+    prompt_file = "cooking_container_prompt.txt"
+    new_wording = "You should output a JSON with one key as the container. Only output the JSON; do not output anything else."
+    prompt = [
+        {"role": "user", "content": open(prompt_file, "r").read() + obs + "\n\n" + new_wording},
+    ]
+    output = run_chatgpt(prompt, model=args.model, temperature=0)
+    return json.loads(output)
+
 # Then, randomly generate and play 10 games within the defined parameters
 steps_to_success = []
-for episode_id in range(0,10):
-#for episode_id in [0]:
+#for episode_id in range(0,10):
+for episode_id in [3]:
     # First step
     obs, infos = env.reset(seed=episode_id, gameFold="train", generateGoldPath=True)
     print("Gold path: " + str(env.getGoldActionSequence()))
+    
+    # Step 0 is always examining the cookbok
+    recipe, _, _, _ = env.step("examine cookbook")
+    print("< examine cookbook")
+    print("> " + recipe)
+    required_ingredients, required_tools, ingredient_states = parse_recipe(recipe)
+    #print(ingredient_states)
+    #raise SystemExit()
+    unlocated_ingredients = required_ingredients.copy()
+    unlocated_tools = required_tools.copy()
+    print("Ingredients: " + str(unlocated_ingredients))
+    print("Tools: " + str(unlocated_tools))
+
     # Display the observations from the environment.
-    # def summarize_obs(obs):
-    brief_obs = "Action: look around\n" + obs
-    print(brief_obs)
+    def summarize_obs(obs):
+        # If obs only has one line, return it
+        if len(obs.split('\n')) == 1:
+            return obs
+        # Only keep where you are and location informtion
+        else:
+            return obs.split('\n')[0].split(". ")[0] + ". " + obs.split('\n')[1]
+    brief_obs = "\nAction: look around\n" + summarize_obs(obs)
+    init_obs = "Action: examine cookbook\n" + recipe + "\nAction: look around\n" + obs
+    print("< look around")
+    print("> " + obs)
     past_prompt = []
     action_queue = []
     obs_queue = []
-    if args.det:
-        prev_pf = open("coin_init_pf.pddl", "r").read()
-    for step_id in range(0, MAX_STEPS):
+    prev_pf = ""
+    all_location_items = {}
+    step_id = 1
+         
+    while True:
+        if step_id >= MAX_STEPS:
+            steps_to_success.append(-1)
+            break
         print("Step " + str(step_id))
+
+        # Enter new room
+        if args.method == "pddl" and obs.startswith("You are in "):
+            obs = obs.split("\n")[0] # remove info about doors
+            location_items = get_location_items(obs)
+            location_name = list(location_items.keys())[0]
+            for i, item in enumerate(list(location_items.values())[0]):
+                if item.endswith(" (closed)"):
+                    item = item.replace(" (closed)", "")
+                    location_items[location_name][i] = item
+                    open_obs, _, _, _ = env.step("open " + item)
+                    step_id += 1
+                    print("< open " + item)
+                    print("> " + open_obs)
+                    if "empty" in open_obs:
+                        continue
+                    container_items = get_container_items(open_obs)
+                    for j, ingredient in enumerate(list(container_items.values())[0]):
+                        if ingredient in unlocated_ingredients + unlocated_tools: 
+                            if ingredient in unlocated_ingredients: unlocated_ingredients.remove(ingredient)
+                            if ingredient in unlocated_tools: unlocated_tools.remove(ingredient)
+                            take_obs, _, _, _ = env.step("take " + ingredient)
+                            step_id += 1
+                            print("< take " + ingredient)
+                            print("> " + take_obs)
+                if item in unlocated_tools: 
+                    unlocated_tools.remove(item)
+                    if item == "knife":
+                        take_obs, _, _, _ = env.step("take " + item)
+                        step_id += 1
+                        print("< take " + item)
+                        print("> " + take_obs)
+                if item in unlocated_ingredients: 
+                    unlocated_ingredients.remove(item)
+                    take_obs, _, _, _ = env.step("take " + item)
+                    step_id += 1
+                    print("< take " + item)
+                    print("> " + take_obs)
+            all_location_items.update(location_items)
+
+        #print(all_location_items)
+        #raise SystemExit()
+
+        print("Unlocated: Ingredients: " + str(unlocated_ingredients))
+        print("Unlocated: Tools: " + str(unlocated_tools))
+        #raise SystemExit()
+        
+
         # Select a valid action
         valid_actions = sorted(infos['validActions'])
-        valid_actions.remove('look around')
-        valid_actions.remove('inventory')
+        valid_actions = [a for a in valid_actions if not a.startswith("close ") and not a.startswith("examine ") and not a.endswith(" cookbook") and a not in ["look around", "wait", "inventory"]]
         print("Valid actions: " + str(valid_actions))
-        #raise SystemExit
-        if step_id == 0:
-            taken_action = "examine cookbook"
-        elif args.method == "random":
+
+        if args.method == "random":
             taken_action = random.choice(valid_actions)
         else:
             # Check action queue for remaining actions
@@ -88,34 +441,31 @@ for episode_id in range(0,10):
                 if args.method == "direct":
                     past_prompt, actions = llm_direct(past_prompt, brief_obs, valid_actions)
                 elif args.method == "pddl":
-                    if args.det:
-                        past_prompt, actions, prev_pf = llm_pddl(past_prompt, brief_obs, valid_actions, prev_pf)
-                    else:
-                        try:
-                            past_prompt, actions, _ = llm_pddl(past_prompt, brief_obs, valid_actions)
-                        except:
-                            steps_to_success.append(-1)
-                            break
+                    if not prev_pf:
+                        prev_pf = open("coin_init_pf.pddl", "r").read()
+                    past_prompt, actions, prev_pf = llm_pddl_find(past_prompt, brief_obs, prev_pf)
+                    # If there are still uncollected ingredients or unlocated tools
+                    if not (unlocated_ingredients or unlocated_tools):
+                        # Cook
+                        actions = llm_pddl_cook(prev_pf, required_ingredients, required_tools, all_location_items, ingredient_states)
+                        print(actions)
+                        actions += ["prepare meal", "eat meal"]
+                        #raise SystemExit()
                 action_queue += actions
-            if action_queue:
-                taken_action = action_queue.pop(0)
-                # if planned action is invalid, execute a random action
-                if taken_action not in valid_actions:
-                    #raise ValueError("Invalid action")
-                    steps_to_success.append(-1)
-                    break
-                    print("Invalid action: " + taken_action, ". Taking random action")
-                    taken_action = random.choice(valid_actions)
-            # if no plan can be found, execute a random action
-            else:
-                #raise ValueError("No plan is found")
-                steps_to_success.append(-1)
-                break
-                print("No plan is found. ", "Taking random action")
-                taken_action = random.choice(valid_actions)
+            
+            taken_action = action_queue.pop(0)
+            # if planned action is invalid, execute a random action
+            # TODO: there's a bug that only considers the previous valid_actions
+            #if taken_action not in valid_actions:
+            #    raise ValueError("Invalid action")
+                #steps_to_success.append(-1)
+                #break
+                #print("Invalid action: " + taken_action, ". Taking random action")
+                #taken_action = random.choice(valid_actions)
 
         # Take that action
         obs, reward, done, infos = env.step(taken_action)
+        step_id += 1
         brief_obs = "Action: " + taken_action + "\n" + obs
         obs_queue.append(brief_obs)
 
@@ -128,6 +478,4 @@ for episode_id in range(0,10):
             else:
                 steps_to_success.append(-1)
             break
-    else:
-        steps_to_success.append(-1)
 print(steps_to_success)

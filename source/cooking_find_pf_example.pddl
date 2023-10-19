@@ -1,10 +1,10 @@
-(define (problem cook)
+(define (problem find)
   (:domain environment)
   (:objects
-    kitchen - location
+    kitchen pantry - location
     north south east west - direction
     chicken_wing red_apple red_onion - ingredient
-    fridge - container
+    fridge box - container
     toaster - toaster
     stove - stove
     oven - oven
@@ -13,12 +13,15 @@
   (:init
     (at kitchen)
     (visited kitchen)
+    (visited pantry)
+    (connected kitchen pantry north)
     (obj_at fridge kitchen)
+    (obj_at box pantry)
     (obj_at toaster kitchen)
     (obj_at stove kitchen)
     (obj_at oven kitchen)
-    (have knife)
-    (have chicken_wing)
+    (at knife kitchen)
+    (contain fridge chicken_wing)
     (have red_apple)
     (have red_onion)
   )

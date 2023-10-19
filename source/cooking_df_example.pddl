@@ -14,6 +14,7 @@
     (connected ?loc1 - location ?loc2 - location ?dir - direction)
     (closed_door ?loc1 - location ?loc2 - location)
     
+    (contain ?con - container ?ing - ingredient)
     (grilled ?ing - ingredient)
     (roasted ?ing - ingredient)
     (fried ?ing - ingredient)
@@ -33,6 +34,18 @@
     :parameters (?loc1 - location ?loc2 - location)
     :precondition (and (at ?loc1) (closed_door ?loc1 ?loc2))
     :effect (not (closed_door ?loc1 ?loc2))
+  )
+  
+  (:action take
+    :parameters (?obj - object ?loc - location)
+    :precondition (and (at ?loc) (obj_at ?obj ?loc))
+    :effect (and (have ?obj) (not (obj_at ?obj ?loc)))
+  )
+  
+  (:action take_from_container
+    :parameters (?ing - ingredient ?loc - location ?con - container)
+    :precondition (and (at ?loc) (obj_at ?con ?loc) (contain ?con ?ing))
+    :effect (and (have ?ing) (not (contain ?con ?ing)))
   )
   
   (:action use_stove

@@ -1,0 +1,25 @@
+Given an observation, you will mark the location and all items you see. If a container if closed, also clearly note it.
+
+For example, given the following observation:
+You are in the kitchen. In one part of the room you see a stove. There is also an oven. You also see a toaster. In another part of the room you see a fridge that is closed. In one part of the room you see a counter that has a knife, and a cookbook on it. There is also a kitchen cupboard that is closed. You also see a cutlery drawer that is closed. In another part of the room you see a trash can that is closed. In one part of the room you see a dishwasher that is closed. There is also a dining chair, that has nothing on it.
+
+You should output this JSON with one key as the location:
+{
+  "kitchen": [
+    "stove",
+    "oven",
+    "toaster",
+    "fridge (closed)",
+    "counter",
+    "knife",
+    "cookbook",
+    "kitchen cupboard (closed)",
+    "cutlery drawer (closed)",
+    "trash can (closed)",
+    "dishwasher (closed)",
+    "dining chair"
+  ]
+}
+
+
+Now, let's start afresh. 

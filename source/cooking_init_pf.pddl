@@ -3,12 +3,6 @@
   (:objects
     kitchen - location
     north south east west - direction
-    chicken_wing red_apple red_onion - ingredient
-    fridge - container
-    toaster - toaster
-    stove - stove
-    oven - oven
-    knife - knife
   )
   (:init
     (at kitchen)
@@ -21,14 +15,5 @@
     (have chicken_wing)
     (have red_apple)
     (have red_onion)
-  )
-  (:goal 
-    (and
-        (grilled chicken_wing)
-        (chopped red_apple)
-        (roasted red_apple)
-        (sliced red_onion)
-        (fried red_onion)
-    )
   )
 )

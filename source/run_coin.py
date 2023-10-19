@@ -132,11 +132,13 @@ def llm_pddl(past_prompt, obs, valid_actions, prev_pf=""):
         ]
     #print(prompt)
     #raise SystemExit()
+    
+    cache_name = "cache_coin.pkl"
     try:
-        cache = pickle.load(open("cache.pkl", "rb"))
+        cache = pickle.load(open(cache_name, "rb"))
     except FileNotFoundError:
-        pickle.dump({}, open("cache.pkl", "wb"))
-        cache = pickle.load(open("cache.pkl", "rb"))
+        pickle.dump({}, open(cache_name, "wb"))
+        cache = pickle.load(open(cache_name, "rb"))
     try:
         if not args.oc:
             output = cache[(NUM_LOCATIONS, episode_id, step_id)]
