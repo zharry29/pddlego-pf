@@ -1,7 +1,7 @@
-Given an observation, you will mark the container and all items you see in it. Do not include whether the ingredient is raw or not.
+Given an observation, you will mark the container and all items you see in it.
 
 For example, given the following observation:
-You open the fridge. The fridge contains a block of cheese, a raw pork chop.
+You open the fridge. The fridge contains a block of cheese, a pork chop.
 
 You should output this JSON with one key as the container:
 {

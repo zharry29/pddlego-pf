@@ -40,7 +40,7 @@ def llm_direct(past_prompt, obs, valid_actions):
             {"role": "assistant", "content": "Absolutely, I'm ready! Please describe the environment."},
         ]
     prompt = past_prompt + [
-        {"role": "user", "content": obs + "\n\n" + "Your valid actions are: " + str(valid_actions) + "\n\n" + "Which action do you take?"},
+        {"role": "user", "content": obs + "\n\n" + "Your valid actions are: " + str(valid_actions) + "\n\n" + "Which action do you take? Output the action only and nothing else."},
     ]
     print("===")
     print(prompt)
@@ -76,6 +76,40 @@ def space_to_underscore(s):
 def underscore_to_space(s):
     return s.replace("_", " ")
 
+def map_actions_find(action, pf):
+    # move action
+    # (move kitchen corridor west)
+    if "(move " in action:
+        action = action.replace("(", "").replace(")", "").split(" ")
+        action = action[0] + " " + action[-1]
+    # open door action
+    # open_door l1
+    elif "(open_door " in action:
+        _, source, target = action.replace("(", "").replace(")", "").split(" ")
+        direction = ""
+        for line in pf.split("\n"):
+            if "(connected" in line:
+                loc_source = line.split("(connected ")[1].split(" ")[0]
+                loc_target = line.split("(connected ")[1].split(" ")[1]
+                if loc_source == source and loc_target == target:
+                    direction = line.split("(connected ")[1].split(" ")[2].split(")")[0]
+                    break
+        action = "open door to " + direction
+    return action
+    
+def map_actions_cook(action):
+    action = action.replace("(", "").replace(")", "")
+    if "use_toaster" in action:
+        action = "cook " + underscore_to_space(action.split(" ")[1]) + " in toaster"
+    elif "use_oven" in action:
+        action = "cook " + underscore_to_space(action.split(" ")[1]) + " in oven"
+    elif "use_stove" in action:
+        action = "cook " + underscore_to_space(action.split(" ")[1]) + " in stove"
+    else:
+        action = action.split(" ")[0] + " " + underscore_to_space(action.split(" ")[1])
+
+    return action
+
 def llm_pddl_cook(prev_pf, required_ingredients, required_tools, all_location_items, ingredient_states):
     #new_wording = "You will modify the above problem file using add, delate, and replace operations (in a JSON format). You SHOULD NOT provide a problem file directly."
     pf_lines = prev_pf.split("\n")
@@ -110,21 +144,8 @@ def llm_pddl_cook(prev_pf, required_ingredients, required_tools, all_location_it
     df = open("cooking_df.pddl", "r").read()
     actions = run_pddl_solver(df, pf)
     print(actions)
-
-    def map_actions(action):
-        action = action.replace("(", "").replace(")", "")
-        if "use_toaster" in action:
-            action = "cook " + underscore_to_space(action.split(" ")[1]) + " in toaster"
-        elif "use_oven" in action:
-            action = "cook " + underscore_to_space(action.split(" ")[1]) + " in oven"
-        elif "use_stove" in action:
-            action = "cook " + underscore_to_space(action.split(" ")[1]) + " in stove"
-        else:
-            action = action.split(" ")[0] + " " + underscore_to_space(action.split(" ")[1])
-
-        return action
     
-    actions = list(map(map_actions, actions))
+    actions = list(map(map_actions_cook, actions))
 
     return actions
 
@@ -242,28 +263,8 @@ def llm_pddl_find(past_prompt, obs, prev_pf=""):
 
     actions = run_pddl_solver(df, pf)
 
-    def map_actions(action):
-        # move action
-        # (move kitchen corridor west)
-        if "(move " in action:
-            action = action.replace("(", "").replace(")", "").split(" ")
-            action = action[0] + " " + action[-1]
-        # open door action
-        # open_door l1
-        elif "(open_door " in action:
-            _, source, target = action.replace("(", "").replace(")", "").split(" ")
-            direction = ""
-            for line in pf.split("\n"):
-                if "(connected" in line:
-                    loc_source = line.split("(connected ")[1].split(" ")[0]
-                    loc_target = line.split("(connected ")[1].split(" ")[1]
-                    if loc_source == source and loc_target == target:
-                        direction = line.split("(connected ")[1].split(" ")[2].split(")")[0]
-                        break
-            action = "open door to " + direction
-        return action
     #print(actions)
-    actions = list(map(map_actions, actions))
+    actions = [map_actions_find(a, pf) for a in actions]
     print(actions)
     #raise SystemExit
 
@@ -313,6 +314,8 @@ def parse_recipe(recipe):
             assert ingredient in ingredients
             tools.append(required_tool)
             ingredient_states.append((action_to_state[action], ingredient))
+    # Remove duplicates from tools
+    tools = list(set(tools))
     return ingredients, tools, ingredient_states
 
 def get_location_items(obs):
@@ -333,10 +336,36 @@ def get_container_items(obs):
     output = run_chatgpt(prompt, model=args.model, temperature=0)
     return json.loads(output)
 
+def move_to_kitchen(pf):
+    goal_block = """  (:goal 
+    (exists (?x - location)
+        (and
+            (not (visited ?x))
+            (at ?x)
+        )
+    )
+  )"""
+    new_goal_block = """  (:goal 
+    (at kitchen)
+  )"""
+    new_pf = pf.replace(goal_block, new_goal_block)
+    
+    df = open("coin_df.pddl", "r").read()
+    actions = run_pddl_solver(df, new_pf)
+    actions = [map_actions_find(a, pf) for a in actions]
+    return actions
+
+def process_item_name(item):
+    if item.startswith("raw "):
+        item = item.split("raw ")[1]
+    if item.startswith("some "):
+        item = item.split("some ")[1]
+    return item
+
 # Then, randomly generate and play 10 games within the defined parameters
 steps_to_success = []
-#for episode_id in range(0,10):
-for episode_id in [3]:
+for episode_id in range(0,10):
+#for episode_id in [0]:
     # First step
     obs, infos = env.reset(seed=episode_id, gameFold="train", generateGoldPath=True)
     print("Gold path: " + str(env.getGoldActionSequence()))
@@ -394,13 +423,21 @@ for episode_id in [3]:
                     if "empty" in open_obs:
                         continue
                     container_items = get_container_items(open_obs)
-                    for j, ingredient in enumerate(list(container_items.values())[0]):
-                        if ingredient in unlocated_ingredients + unlocated_tools: 
-                            if ingredient in unlocated_ingredients: unlocated_ingredients.remove(ingredient)
-                            if ingredient in unlocated_tools: unlocated_tools.remove(ingredient)
-                            take_obs, _, _, _ = env.step("take " + ingredient)
+                    #print(container_items)
+                    #raise SystemExit()
+                    for j, takeable in enumerate(list(container_items.values())[0]):
+                        takeable = process_item_name(takeable)
+                        if takeable == "knife": 
+                            unlocated_tools.remove(takeable)
+                            take_obs, _, _, _ = env.step("take " + takeable)
                             step_id += 1
-                            print("< take " + ingredient)
+                            print("< take " + takeable)
+                            print("> " + take_obs)
+                        elif takeable in unlocated_ingredients: 
+                            unlocated_ingredients.remove(takeable)
+                            take_obs, _, _, _ = env.step("take " + takeable)
+                            step_id += 1
+                            print("< take " + takeable)
                             print("> " + take_obs)
                 if item in unlocated_tools: 
                     unlocated_tools.remove(item)
@@ -449,6 +486,11 @@ for episode_id in [3]:
                         # Cook
                         actions = llm_pddl_cook(prev_pf, required_ingredients, required_tools, all_location_items, ingredient_states)
                         print(actions)
+                        # Check if in kitchen
+                        if "(at kitchen)" not in prev_pf:
+                            # Move to kitchen
+                            actions = move_to_kitchen(prev_pf) + actions
+                            print(actions)
                         actions += ["prepare meal", "eat meal"]
                         #raise SystemExit()
                 action_queue += actions
