@@ -229,8 +229,8 @@ def llm_pddl(past_prompt, obs, valid_actions, prev_pf=""):
 
 # Then, randomly generate and play 10 games within the defined parameters
 steps_to_success = []
-for episode_id in range(0,10):
-#for episode_id in [8]:
+#for episode_id in range(0,10):
+for episode_id in [8]:
     # First step
     obs, infos = env.reset(seed=episode_id, gameFold="train", generateGoldPath=True)
     print("Gold path: " + str(env.getGoldActionSequence()))

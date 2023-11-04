@@ -1,0 +1,34 @@
+You are exploring an environment with many connected rooms. Some rooms are connected by closed doors that you need to open before moving from one to another. Your goal is to go to a room that you have not visited yet.
+
+You will create a PDDL domain file that includes the following actions:
+- move, where you move from one room to another
+- open door, where you open a closed door so that you can move through it
+
+For example, given the observation that:
+"You are in the kitchen. To the South you see a closed frosted-glass door."
+
+Your domain file should work with the following problem file:
+(define (problem exploration)
+  (:domain environment)
+  (:objects
+    kitchen loc1 - location
+    north south east west - direction
+  )
+  (:init
+    (at kitchen)
+    (visited kitchen)
+	(connected kitchen loc1 south)
+	(closed_door kitchen loc1)
+  )
+  (:goal 
+    (exists (?x - location)
+        (and
+            (not (visited ?x))
+            (at ?x)
+        )
+    )
+  )
+)
+
+
+Create the domain file now.

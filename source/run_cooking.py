@@ -140,10 +140,10 @@ def llm_pddl_cook(prev_pf, required_ingredients, required_tools, all_location_it
             out_lines.append(")")
             break
     pf = "\n".join(out_lines)
-    print(pf)
+    #print(pf)
     df = open("cooking_df.pddl", "r").read()
     actions = run_pddl_solver(df, pf)
-    print(actions)
+    #print(actions)
     
     actions = list(map(map_actions_cook, actions))
 
@@ -241,14 +241,14 @@ def llm_pddl_find(past_prompt, obs, prev_pf=""):
     #print(output)
     #raise SystemExit
     df = open("coin_df.pddl", "r").read()
-    print(output)
+    #print(output)
     try:
         out_json = json.loads(output)
     except json.decoder.JSONDecodeError:
         out_json = json.loads(fix_json(output))
     pf = apply_edit(prev_pf, out_json)
     prev_pf = pf
-    print(pf)
+    #print(pf)
     #raise SystemExit
     if not args.det:
         prompt += [
@@ -265,7 +265,7 @@ def llm_pddl_find(past_prompt, obs, prev_pf=""):
 
     #print(actions)
     actions = [map_actions_find(a, pf) for a in actions]
-    print(actions)
+    #print(actions)
     #raise SystemExit
 
     #taken_action = actions[0]
@@ -364,8 +364,8 @@ def process_item_name(item):
 
 # Then, randomly generate and play 10 games within the defined parameters
 steps_to_success = []
-for episode_id in range(0,10):
-#for episode_id in [0]:
+#for episode_id in range(0,10):
+for episode_id in [5]:
     # First step
     obs, infos = env.reset(seed=episode_id, gameFold="train", generateGoldPath=True)
     print("Gold path: " + str(env.getGoldActionSequence()))
@@ -379,8 +379,8 @@ for episode_id in range(0,10):
     #raise SystemExit()
     unlocated_ingredients = required_ingredients.copy()
     unlocated_tools = required_tools.copy()
-    print("Ingredients: " + str(unlocated_ingredients))
-    print("Tools: " + str(unlocated_tools))
+    #print("Ingredients: " + str(unlocated_ingredients))
+    #print("Tools: " + str(unlocated_tools))
 
     # Display the observations from the environment.
     def summarize_obs(obs):
@@ -457,15 +457,15 @@ for episode_id in range(0,10):
         #print(all_location_items)
         #raise SystemExit()
 
-        print("Unlocated: Ingredients: " + str(unlocated_ingredients))
-        print("Unlocated: Tools: " + str(unlocated_tools))
+        #print("Unlocated: Ingredients: " + str(unlocated_ingredients))
+        #print("Unlocated: Tools: " + str(unlocated_tools))
         #raise SystemExit()
         
 
         # Select a valid action
         valid_actions = sorted(infos['validActions'])
         valid_actions = [a for a in valid_actions if not a.startswith("close ") and not a.startswith("examine ") and not a.endswith(" cookbook") and a not in ["look around", "wait", "inventory"]]
-        print("Valid actions: " + str(valid_actions))
+        #print("Valid actions: " + str(valid_actions))
 
         if args.method == "random":
             taken_action = random.choice(valid_actions)
@@ -485,12 +485,12 @@ for episode_id in range(0,10):
                     if not (unlocated_ingredients or unlocated_tools):
                         # Cook
                         actions = llm_pddl_cook(prev_pf, required_ingredients, required_tools, all_location_items, ingredient_states)
-                        print(actions)
+                        #print(actions)
                         # Check if in kitchen
                         if "(at kitchen)" not in prev_pf:
                             # Move to kitchen
                             actions = move_to_kitchen(prev_pf) + actions
-                            print(actions)
+                            #print(actions)
                         actions += ["prepare meal", "eat meal"]
                         #raise SystemExit()
                 action_queue += actions

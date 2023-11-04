@@ -1,0 +1,66 @@
+You are provided with the following PDDL domain file about navigating through a kitchen environment.
+
+(define (domain environment)
+  (:requirements :strips :typing :negative-preconditions :disjunctive-preconditions)
+  (:types
+    location
+    direction
+  )
+  (:predicates
+    (at ?loc - location)
+    (visited ?loc - location)
+    (connected ?loc1 - location ?loc2 - location ?dir - direction)
+    (closed_door ?loc1 - location ?loc2 - location)
+  )
+
+  (:action move
+    :parameters (?loc1 - location ?loc2 - location ?dir - direction)
+    :precondition (and (at ?loc1) (connected ?loc1 ?loc2 ?dir) (not (closed_door ?loc1 ?loc2)))
+    :effect (and (not (at ?loc1)) (at ?loc2))
+  )
+
+  (:action open_door
+    :parameters (?loc1 - location ?loc2 - location)
+    :precondition (and (at ?loc1) (closed_door ?loc1 ?loc2))
+    :effect (not (closed_door ?loc1 ?loc2))
+  )
+)
+
+You are also provided with the following PDDL problem file, specifying where you're at, 
+
+
+Next, you will observe a trajectory of an agent:
+< look around
+> You are in the kitchen. In one part of the room you see a stove. There is also an oven. You also see a toaster. In another part of the room you see a fridge that is closed. In one part of the room you see a counter that has a knife, and a cookbook on it. There is also a kitchen cupboard that is closed. You also see a cutlery drawer that is closed. In another part of the room you see a trash can that is closed. In one part of the room you see a dishwasher that is closed. There is also a dining chair, that has nothing on it.
+To the South you see a closed frosted-glass door.
+< examine cookbook
+> Gather all following ingredients and follow the directions to prepare this tasty meal.
+
+Ingredients:
+  red onion
+  pork chop
+  flour
+
+Directions:
+  slice the red onion
+  fry the red onion
+  roast the pork chop
+  prepare meal
+> slice red onion
+< You slice the red onion.
+> cook red onion in stove
+> You fry the red onion with the stove.
+> cook pork chop in oven
+> You roast the pork chop with the stove.
+> prepare meal
+< Adding the meal to your inventory.
+> eat meal
+< You eat the meal. It is delicious.
+
+Now, you will do two things. 1, expand upon the given domain file by adding the new actions you see in this trajectory. 2, generate a problem file which assumes that you have all the ingredients and that all appliances are in the kitchen where you're in. The goal of the problem file is to carry out the actions in the above trajectory to cook the meal.
+
+Let's start with 1. Generate the expanded domain file now.
+
+===
+
+Based on the domain file you generated above, now generate the problem file to cook the meal.
