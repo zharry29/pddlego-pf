@@ -1,4 +1,4 @@
-You are provided with the following PDDL domain file about navigating through a kitchen environment.
+You are an expert in PDDL. You are provided with the following PDDL domain file about navigating through a kitchen environment.
 
 (define (domain environment)
   (:requirements :strips :typing :negative-preconditions :disjunctive-preconditions)
@@ -26,41 +26,48 @@ You are provided with the following PDDL domain file about navigating through a 
   )
 )
 
-You are also provided with the following PDDL problem file, specifying where you're at, 
-
-
 Next, you will observe a trajectory of an agent:
-< look around
-> You are in the kitchen. In one part of the room you see a stove. There is also an oven. You also see a toaster. In another part of the room you see a fridge that is closed. In one part of the room you see a counter that has a knife, and a cookbook on it. There is also a kitchen cupboard that is closed. You also see a cutlery drawer that is closed. In another part of the room you see a trash can that is closed. In one part of the room you see a dishwasher that is closed. There is also a dining chair, that has nothing on it.
-To the South you see a closed frosted-glass door.
 < examine cookbook
 > Gather all following ingredients and follow the directions to prepare this tasty meal.
 
 Ingredients:
-  red onion
-  pork chop
   flour
+  cilantro
 
 Directions:
-  slice the red onion
-  fry the red onion
-  roast the pork chop
+  dice the cilantro
   prepare meal
-> slice red onion
-< You slice the red onion.
-> cook red onion in stove
-> You fry the red onion with the stove.
-> cook pork chop in oven
-> You roast the pork chop with the stove.
+
+
+< look around
+> You are in the kitchen. In one part of the room you see a stove. There is also an oven. You also see a toaster. In another part of the room you see a fridge that is closed. In one part of the room you see a counter that has a knife, and a cookbook on it. There is also a kitchen cupboard that is closed. You also see a cutlery drawer that is closed. In another part of the room you see a trash can that is closed. In one part of the room you see a dishwasher that is closed. There is also a dining chair, that has nothing on it. 
+To the West you see a closed frosted-glass door. 
+< open fridge
+> You open the fridge. The fridge contains some cilantro.
+< take cilantro
+> You take the cilantro.
+< take knife
+> You take the knife.
+< open kitchen cupboard
+> You open the kitchen cupboard. It's empty inside.
+< open cutlery drawer
+> You open the cutlery drawer. It's empty inside.
+< open trash can
+> You open the trash can. It's empty inside.
+< open dishwasher
+> You open the dishwasher. It's empty inside.
+> open door to west
+> move west
+< take flour
+> You take the flour.
+> move east
+> dice cilantro
 > prepare meal
-< Adding the meal to your inventory.
-> eat meal
-< You eat the meal. It is delicious.
 
-Now, you will do two things. 1, expand upon the given domain file by adding the new actions you see in this trajectory. 2, generate a problem file which assumes that you have all the ingredients and that all appliances are in the kitchen where you're in. The goal of the problem file is to carry out the actions in the above trajectory to cook the meal.
 
-Let's start with 1. Generate the expanded domain file now.
+Now, you need to do 3 things.
+#1. Describe in natural language the names of the new actions, and the preconditions and effects of each.
+#2. Expand upon the given domain file about navigation by adding the new actions you see in this trajectory. Provide the new domain file.
+#3. Provide a problem file that assumes you're in the kitchen and have all ingredients and tools. Your task is to prepare the meal.
 
-===
-
-Based on the domain file you generated above, now generate the problem file to cook the meal.
+Let's start with #1. Please describe in natural language the names of the new actions, and the preconditions and effects of each. Be concise.

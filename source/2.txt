@@ -1,0 +1,34 @@
+< examine cookbook
+> Gather all following ingredients and follow the directions to prepare this tasty meal.
+
+Ingredients:
+  parsley
+  block of cheese
+
+Directions:
+  dice the parsley
+  prepare meal
+
+
+< look around
+> You are in the kitchen. In one part of the room you see a stove. There is also an oven. You also see a toaster. In another part of the room you see a fridge that is closed. In one part of the room you see a counter that has a cookbook on it. There is also a kitchen cupboard that is closed. You also see a cutlery drawer that is closed. In another part of the room you see a trash can that is closed. In one part of the room you see a dishwasher that is closed. There is also a dining chair, that has nothing on it. 
+To the South you see a closed plain door. 
+< open fridge
+> You open the fridge. The fridge contains some parsley, a block of cheese.
+< take parsley
+> You take the parsley.
+< take block of cheese
+> You take the block of cheese.
+< open kitchen cupboard
+> You open the kitchen cupboard. The kitchen cupboard contains a knife.
+< take knife
+> You take the knife.
+< open cutlery drawer
+> You open the cutlery drawer. It's empty inside.
+< open trash can
+> You open the trash can. It's empty inside.
+< open dishwasher
+> You open the dishwasher. It's empty inside.
+> dice parsley
+> prepare meal
+> eat meal

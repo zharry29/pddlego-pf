@@ -11,8 +11,9 @@ import json
 from fix_json import fix_json
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--model', default='gpt-4', type=str, help='OpenAI model name.')
+parser.add_argument('--model', default='gpt-4-1106-preview', type=str, help='OpenAI model name.')
 parser.add_argument('--method', default='', required=True, type=str, help='direct|pddl')
+parser.add_argument('--ep', default=-1, required=False, type=int, help='If specified, only run on that episode ID.')
 parser.add_argument('--det', action='store_true', help='Whether to deterministically edit the problem file. Assumes method is pddl.')
 parser.add_argument('--oc', action='store_true', help='Whether to overwrite the cache.')
 
@@ -324,7 +325,8 @@ def get_location_items(obs):
     prompt = [
         {"role": "user", "content": open(prompt_file, "r").read() + obs + "\n\n" + new_wording},
     ]
-    output = run_chatgpt(prompt, model=args.model, temperature=0)
+    output = run_chatgpt(prompt, model=args.model, temperature=0, force_json=True)
+    #print(output)
     return json.loads(output)
 
 def get_container_items(obs):
@@ -333,7 +335,7 @@ def get_container_items(obs):
     prompt = [
         {"role": "user", "content": open(prompt_file, "r").read() + obs + "\n\n" + new_wording},
     ]
-    output = run_chatgpt(prompt, model=args.model, temperature=0)
+    output = run_chatgpt(prompt, model=args.model, force_json=True, temperature=0)
     return json.loads(output)
 
 def move_to_kitchen(pf):
@@ -364,11 +366,14 @@ def process_item_name(item):
 
 # Then, randomly generate and play 10 games within the defined parameters
 steps_to_success = []
-#for episode_id in range(0,10):
-for episode_id in [5]:
+if args.ep != -1:
+    episode_ids = [args.ep]
+else:
+    episode_ids = range(0,10)
+for episode_id in episode_ids:
     # First step
     obs, infos = env.reset(seed=episode_id, gameFold="train", generateGoldPath=True)
-    print("Gold path: " + str(env.getGoldActionSequence()))
+    #print("Gold path: " + str(env.getGoldActionSequence()))
     
     # Step 0 is always examining the cookbok
     recipe, _, _, _ = env.step("examine cookbook")
@@ -405,7 +410,7 @@ for episode_id in [5]:
         if step_id >= MAX_STEPS:
             steps_to_success.append(-1)
             break
-        print("Step " + str(step_id))
+        #print("Step " + str(step_id))
 
         # Enter new room
         if args.method == "pddl" and obs.startswith("You are in "):
@@ -513,11 +518,12 @@ for episode_id in [5]:
 
         # Display action and the game's feedback.
         print(">", taken_action)
-        print(brief_obs)
+        #print(brief_obs)
         if done:
             if infos["tasksuccess"]:
                 steps_to_success.append(step_id)
             else:
                 steps_to_success.append(-1)
             break
-print(steps_to_success)
+        #_ = input("Continue?")
+#print(steps_to_success)
