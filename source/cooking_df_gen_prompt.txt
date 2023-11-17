@@ -1,42 +1,79 @@
-There a simulated kitchen environment where an agent need to cook a meal using the ingredients it has. 
+You are an expert on PDDL. I will provide a description of a simulation, and you will generate a corresponding PDDL domain file and problem file.
 
-You are given the following basic domain file about navigation:
-(define (domain environment)
-  (:requirements :strips :typing :negative-preconditions :disjunctive-preconditions)
-  (:types
-    location
-    direction
-  )
-  (:predicates
-    (at ?loc - location)
-    (visited ?loc - location)
-    (connected ?loc1 - location ?loc2 - location ?dir - direction)
-    (closed_door ?loc1 - location ?loc2 - location)
-  )
+Here is a game where you need to move through rooms explore them. Sometimes, two rooms are connected by closed door that you need to open before you can go from one to another. You should also keep track of which room you have visited, and the direction at which you enter a room. You will start with a recipe that specifies some ingredients that you must pick up, and how you should cook each of them. Once you've done all these, you can prepare a meal in the kitchen and eat it up. 
 
-  (:action move
-    :parameters (?loc1 - location ?loc2 - location ?dir - direction)
-    :precondition (and (at ?loc1) (connected ?loc1 ?loc2 ?dir) (not (closed_door ?loc1 ?loc2)))
-    :effect (and (not (at ?loc1)) (at ?loc2))
-  )
+Here is an example trajectory of such as game:
 
-  (:action open_door
-    :parameters (?loc1 - location ?loc2 - location)
-    :precondition (and (at ?loc1) (closed_door ?loc1 ?loc2))
-    :effect (not (closed_door ?loc1 ?loc2))
-  )
+> Recipe: Gather all following ingredients and follow the directions to prepare this tasty meal.
+
+Ingredients:
+  flour
+  onion
+
+Directions:
+  dice the onion
+  fry the onion
+  prepare meal
+
+> You are in the kitchen. In one part of the room you see a stove. There is also an oven. You also see a toaster. In another part of the room you see a fridge that is closed. In one part of the room you see a counter that has a knife, and a cookbook on it. There is also a kitchen cupboard that is closed. You also see a cutlery drawer that is closed. In another part of the room you see a trash can that is closed. In one part of the room you see a dishwasher that is closed. There is also a dining chair, that has nothing on it. 
+To the West you see a closed frosted-glass door. 
+< open fridge
+> You open the fridge. The fridge contains some onion.
+< take onion
+> You take the onion.
+< take knife
+> You take the knife.
+< open kitchen cupboard
+> You open the kitchen cupboard. It's empty inside.
+< open cutlery drawer
+> You open the cutlery drawer. It's empty inside.
+< open trash can
+> You open the trash can. It's empty inside.
+< open dishwasher
+> You open the dishwasher. It's empty inside.
+< open door to west
+> You open the door to the West, revealing the pantry.
+< move west
+> You are in the pantry. You see the flour.
+Through an open door, to the East you see the kitchen.
+< take flour
+> You take the flour.
+< move east
+> dice onion
+< cook onion with stove
+> You cook the onion with stove. The onion is now fried.
+< prepare meal
+> You have prepared the meal and eaten it. Congratulations!
+
+You will now generate a PDDL domain file named "environment" that includes the following actions:
+(:action move ; go from one room to another
+    <<parameters, precondition, effect>>>
 )
 
-Your job is to observe an agent in this environment and build on the domain file. Your domain file should include the following actions:
-- chop: use a knife to make something chopped
-- slice: use a knife to make something sliced
-- dice: use a knife to make something diced
-- use_stove: use a stove to make something fried
-- use_toaster: use a stove to make something grilled
-- use_oven: use a stove to make something roasted
+(:action open_door ; open a closed door
+    <<parameters, precondition, effect>>>
+)
 
-Your domain file should work with the following example problem file:
+(:action open_container ; open a closed container
+    <<parameters, precondition, effect>>>
+)
 
+(:action take ; take something out of a container
+    <<parameters, precondition, effect>>>
+)
 
+(:action use_stove; fry something
+    <<parameters, precondition, effect>>>
+)
 
-Create the domain file now.
+(:action dice ; dice something with a knife
+    <<parameters, precondition, effect>>>
+)
+
+(:action prepare_meal ; prepare the meal once all steps in the recipe is followed
+    <<parameters, precondition, effect>>>
+)
+
+You will now generate a domain file.  Throughout the game, you may assume that you know where exactly each ingredient and tool is. You always start in the kitchen.
+
+Also generate a problem file that can be solved by and showcase your domain file.

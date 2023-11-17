@@ -1,4 +1,6 @@
-You are an expert in PDDL. You are provided with the following PDDL domain file about navigating through a kitchen environment.
+You are an expert in PDDL. Here is a cooking simulation where an agent needs to navigate some rooms to find the ingredients and tools specified by a recipe. Then, it needs to operate on these ingredients using the tools according to the recipe.
+
+You are provided with the following PDDL domain file about the navigation part of the game.
 
 (define (domain environment)
   (:requirements :strips :typing :negative-preconditions :disjunctive-preconditions)
@@ -26,26 +28,27 @@ You are an expert in PDDL. You are provided with the following PDDL domain file 
   )
 )
 
+Your task is to expland upon this domain file by adding the relevant information.
+
 Next, you will observe a trajectory of an agent:
-< examine cookbook
-> Gather all following ingredients and follow the directions to prepare this tasty meal.
+
+Recipe: Gather all following ingredients and follow the directions to prepare this tasty meal.
 
 Ingredients:
   flour
-  cilantro
+  onion
 
 Directions:
-  dice the cilantro
+  dice the onion
+  fry the onion
   prepare meal
 
-
-< look around
 > You are in the kitchen. In one part of the room you see a stove. There is also an oven. You also see a toaster. In another part of the room you see a fridge that is closed. In one part of the room you see a counter that has a knife, and a cookbook on it. There is also a kitchen cupboard that is closed. You also see a cutlery drawer that is closed. In another part of the room you see a trash can that is closed. In one part of the room you see a dishwasher that is closed. There is also a dining chair, that has nothing on it. 
 To the West you see a closed frosted-glass door. 
 < open fridge
-> You open the fridge. The fridge contains some cilantro.
-< take cilantro
-> You take the cilantro.
+> You open the fridge. The fridge contains some onion.
+< take onion
+> You take the onion.
 < take knife
 > You take the knife.
 < open kitchen cupboard
@@ -56,18 +59,43 @@ To the West you see a closed frosted-glass door.
 > You open the trash can. It's empty inside.
 < open dishwasher
 > You open the dishwasher. It's empty inside.
-> open door to west
-> move west
+< open door to west
+> You open the door to the West, revealing the pantry.
+< move west
+> You are in the pantry. You see the flour.
+Through an open door, to the East you see the kitchen.
 < take flour
 > You take the flour.
-> move east
-> dice cilantro
-> prepare meal
+< move east
+> dice onion
+< cook onion with stove
+> You cook the onion with stove. The onion is now fried.
+< prepare meal
 
+Based on the new information you see in this trajectory, expand upon the given domain file that includes the following types:
+- ingredient:
+- container:
+- knife 
+- stove:
+and the following predicates:
+- diced
+- fried
+and the following actions:
+- use_stove: use the stove to fry an ingredient
+- dice: use a knife to dice an ingredient
 
-Now, you need to do 3 things.
-#1. Describe in natural language the names of the new actions, and the preconditions and effects of each.
-#2. Expand upon the given domain file about navigation by adding the new actions you see in this trajectory. Provide the new domain file.
-#3. Provide a problem file that assumes you're in the kitchen and have all ingredients and tools. Your task is to prepare the meal.
+===
 
-Let's start with #1. Please describe in natural language the names of the new actions, and the preconditions and effects of each. Be concise.
+Based on your domain file, you now need to generate a problem file for the following recipe:
+Recipe: Gather all following ingredients and follow the directions to prepare this tasty meal.
+
+Ingredients:
+  garlic
+  chicken wing
+
+Directions:
+  dice the garlic
+  fry the chicken wing
+  prepare meal
+
+In your problem file, you may assume that you are in the kitchen, that you already have all the ingredients and tools, and that all the appliances are in the kitchen.

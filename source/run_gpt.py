@@ -1,7 +1,7 @@
 import openai
 import backoff
 
-openai.api_key = open(f'../../_private/harry_ccbft.key').read()
+openai.api_key = open(f'../../_private/harry_ai2.key').read()
 
 @backoff.on_exception(backoff.expo, (openai.error.RateLimitError, openai.error.APIError, openai.error.Timeout, openai.error.ServiceUnavailableError))
 def run_chatgpt(message, model, force_json=False, temperature=0):
