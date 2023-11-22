@@ -11,7 +11,7 @@ import json
 from fix_json import fix_json
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--model', default='gpt-4', type=str, help='OpenAI model name.')
+parser.add_argument('--model', default='gpt-4-1106-preview', type=str, help='OpenAI model name.')
 parser.add_argument('--method', default='', required=True, type=str, help='direct|pddl')
 parser.add_argument('--det', action='store_true', help='Whether to deterministically edit the problem file. Assumes method is pddl.')
 parser.add_argument('--oc', action='store_true', help='Whether to overwrite the cache.')
@@ -25,6 +25,7 @@ env = TextWorldExpressEnv(envStepLimit=100)
 NUM_LOCATIONS = 11
 MAX_STEPS = 50
 env.load(gameName="coin", gameParams=f"numLocations={NUM_LOCATIONS},numDistractorItems=0,includeDoors=1,limitInventorySize=0")
+MAX_RETRY = 5
 
 @backoff.on_exception(backoff.expo, (ConnectionResetError, requests.exceptions.ConnectionError))
 def post_pddl(data):
@@ -59,10 +60,10 @@ def llm_pddl(past_prompt, obs, valid_actions, prev_pf=""):
         o_start = False
         i_start = False
         # Manually cascade location replace
-        loc_replace = {}
-        for s,t in edit_json["objects"]["replace"].items():
-            if s.endswith(" - location") and t.endswith(" - location"):
-                loc_replace[s[:-len(" - location")]] = t[:-len(" - location")]
+        #loc_replace = {}
+        #for s,t in edit_json["objects"]["replace"].items():
+        #    if s.endswith(" - location") and t.endswith(" - location"):
+        #        loc_replace[s[:-len(" - location")]] = t[:-len(" - location")]
 
         for line in prev_pf.split("\n"):
             if "(:object" in line:
@@ -74,7 +75,7 @@ def llm_pddl(past_prompt, obs, valid_actions, prev_pf=""):
                     output.append("    " + to_add)
                 output.append(line)
             elif o_start:
-                if line.strip() in edit_json["objects"]["replace"]:
+                if "replace" in edit_json["objects"] and line.strip() in edit_json["objects"]["replace"]:
                     line = edit_json["objects"]["replace"][line.strip()]
                     output.append("    " + line)
                 elif line.strip() in edit_json["objects"]["delete"]:
@@ -102,8 +103,8 @@ def llm_pddl(past_prompt, obs, valid_actions, prev_pf=""):
         
         output_str = "\n".join(output)
         # Manually cascade location replace using a crude replace
-        for s, t in loc_replace.items():
-            output_str = output_str.replace(s, t)
+        #for s, t in loc_replace.items():
+        #    output_str = output_str.replace(s, t)
         
         return output_str
 
@@ -139,42 +140,58 @@ def llm_pddl(past_prompt, obs, valid_actions, prev_pf=""):
     except FileNotFoundError:
         pickle.dump({}, open(cache_name, "wb"))
         cache = pickle.load(open(cache_name, "rb"))
-    try:
-        if not args.oc:
-            output = cache[(NUM_LOCATIONS, episode_id, step_id)]
-        else:
-            raise KeyError
-    except KeyError:
-        output = run_chatgpt(prompt, model=args.model, temperature=0)
-        cache[(NUM_LOCATIONS, episode_id, step_id)] = output
-        pickle.dump(cache, open("cache.pkl", "wb"))
-
-    #print(output)
-    def parse(output):
-        processed_output = []
-        begin = False
-        for line in output.split("\n"):
-            if line.startswith("(define "):
-                begin = True
-            if begin:
-                processed_output.append(line)
-            if line.startswith(")"):
-                break
-        return "\n".join(processed_output)
-    #raise SystemExit
-    df = open("coin_df.pddl", "r").read()
-    if args.det:
-        print(output)
-        try:
-            out_json = json.loads(output)
-        except json.decoder.JSONDecodeError:
-            out_json = json.loads(fix_json(output))
-        pf = apply_edit(prev_pf, out_json)
-        prev_pf = pf
+    if not args.oc:
+        output = cache[(NUM_LOCATIONS, episode_id, step_id)]
     else:
-        pf = parse(output)
-    print(pf)
-    #raise SystemExit
+        retry_count = 0
+        has_plan = False
+        while not has_plan and retry_count < MAX_RETRY:
+            force_json = True if args.det else False
+            output = run_chatgpt(prompt, model=args.model, temperature=1, force_json=force_json)
+            cache[(NUM_LOCATIONS, episode_id, step_id)] = output
+            pickle.dump(cache, open("cache.pkl", "wb"))
+
+            #print(output)
+            def parse(output):
+                processed_output = []
+                begin = False
+                for line in output.split("\n"):
+                    if line.startswith("(define "):
+                        begin = True
+                    if begin:
+                        processed_output.append(line)
+                    if line.startswith(")"):
+                        break
+                return "\n".join(processed_output)
+            #raise SystemExit
+            df = open("coin_df.pddl", "r").read()
+            if args.det:
+                print(output)
+                try:
+                    out_json = json.loads(output)
+                except json.decoder.JSONDecodeError:
+                    out_json = json.loads(fix_json(output))
+                pf = apply_edit(prev_pf, out_json)
+            else:
+                pf = parse(output)
+            print(pf)
+            #raise SystemExit
+
+            data = {'domain': df,
+                'problem': pf}
+            resp = post_pddl(data)
+            #print(resp)
+            try:
+                actions = resp['result']['plan']
+                has_plan = True
+                prev_pf = pf
+            except KeyError:
+                retry_count += 1
+                print("No plan found. Retrying...")
+            #    return prompt, []
+            #print(actions)
+    if not has_plan:
+        return prompt, [], prev_pf
     if not args.det:
         prompt += [
             {"role": "assistant", "content": pf},
@@ -185,16 +202,6 @@ def llm_pddl(past_prompt, obs, valid_actions, prev_pf=""):
             {"role": "user", "content": "After your previous edits, the current problem file is:\n\n" + pf + "\n\n" + "Please make more edits based on this problem file."},
             {"role": "assistant", "content": "OK, I will base my edit on this problem file."},
         ]
-
-    data = {'domain': df,
-        'problem': pf}
-    resp = post_pddl(data)
-    #print(resp)
-    #try:
-    actions = resp['result']['plan']
-    #except KeyError:
-    #    return prompt, []
-    #print(actions)
     if isinstance(actions[0], str):
         actions.remove('(reach-goal)')
     elif isinstance(actions[0], dict):
@@ -230,7 +237,7 @@ def llm_pddl(past_prompt, obs, valid_actions, prev_pf=""):
 # Then, randomly generate and play 10 games within the defined parameters
 steps_to_success = []
 #for episode_id in range(0,10):
-for episode_id in [8]:
+for episode_id in [0]:
     # First step
     obs, infos = env.reset(seed=episode_id, gameFold="train", generateGoldPath=True)
     print("Gold path: " + str(env.getGoldActionSequence()))
@@ -273,9 +280,9 @@ for episode_id in [8]:
                         if args.det:
                             past_prompt, actions, prev_pf = llm_pddl(past_prompt, brief_obs, valid_actions, prev_pf)
                         else:
-                            try:
-                                past_prompt, actions, _ = llm_pddl(past_prompt, brief_obs, valid_actions)
-                            except:
+                            #try:
+                            past_prompt, actions, _ = llm_pddl(past_prompt, brief_obs, valid_actions)
+                            if not actions:
                                 steps_to_success.append(-1)
                                 break
                     action_queue += actions
@@ -283,12 +290,9 @@ for episode_id in [8]:
                     taken_action = action_queue.pop(0)
                     # if planned action is invalid, execute a random action
                     if taken_action not in valid_actions:
-                        #raise ValueError("Invalid action")
+                        raise ValueError("Invalid action")
                         steps_to_success.append(-1)
                         break
-                        print("Invalid action: " + taken_action, ". Taking random action")
-                        taken_action = random.choice(valid_actions)
-                # if no plan can be found, execute a random action
                 else:
                     #raise ValueError("No plan is found")
                     steps_to_success.append(-1)

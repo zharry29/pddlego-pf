@@ -1,30 +1,31 @@
-(define (problem kitchen-problem)
-    (:domain kitchen-adventure)
-    
-    (:objects
-        kitchen pantry - room
-        fridge kitchen-cupboard cutlery-drawer trash-can dishwasher - container
-        east west - direction
-        stove knife - tool
-        onion flour - ingredient
+(define (problem exploration)
+  (:domain environment)
+  (:objects
+    kitchen - location
+    north south east west - direction
+    backyard
+    backyard - location
+    driveway - location
+    street - location
+  )
+  (:init
+    (visited kitchen)
+    (connected kitchen backyard south)
+    (connected kitchen loc2 west)
+    (closed_door kitchen loc2)
+    (at backyard)
+    (visited backyard)
+    (connected backyard kitchen north)
+    (connected backyard driveway south)
+    (connected backyard street east)
+    (closed_door backyard loc2)
+  )
+  (:goal
+    (exists (?x - location)
+        (and
+            (not (visited ?x))
+            (at ?x)
+        )
     )
-    
-    (:init
-        (at kitchen)
-        (container-closed fridge) (container-closed kitchen-cupboard)
-        (container-closed cutlery-drawer) (container-closed trash-can)
-        (container-closed dishwasher)
-        
-        (contains fridge onion) (contains pantry flour)
-        
-        (connected kitchen pantry west)
-        (door-closed kitchen pantry)
-        
-        (has-tool knife) (has-tool stove)
-        
-        (not (recipe-completed))
-        (not (meal-prepared))
-    )
-    
-    (:goal (and (recipe-completed) (meal-prepared)))
+  )
 )
