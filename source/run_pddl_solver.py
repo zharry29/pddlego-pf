@@ -1,6 +1,6 @@
 import requests, backoff
 
-@backoff.on_exception(backoff.expo, (ConnectionResetError, requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout))
+#@backoff.on_exception(backoff.expo, (ConnectionResetError, requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout))
 def post_pddl(data):
     resp = requests.post('http://solver.planning.domains/solve',
                         verify=False, json=data, timeout=5).json()

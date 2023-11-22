@@ -74,6 +74,6 @@ You will now generate a PDDL domain file named "environment" that includes the f
     <<parameters, precondition, effect>>>
 )
 
-You will now generate a domain file.  Throughout the game, you may assume that you know where exactly each ingredient and tool is. You always start in the kitchen.
+Generate the domain file. Throughout the game, you may assume that you know where exactly each room is and how they're connected. You always start in the kitchen. Now generate a problem file corresponding to the above trajectory. When solved, the actions should correspond to the meaningful actions in the trajectory.
 
-Also generate a problem file that can be solved by and showcase your domain file.
+Provide the domain and problem files now.

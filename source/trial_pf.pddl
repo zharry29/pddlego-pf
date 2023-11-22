@@ -1,30 +1,30 @@
-(define (problem kitchen-adventure)
-  (:domain environment)
-  (:objects
-    kitchen pantry - room
-    west east - direction
-    door1 - door
-    fridge cupboard cutlery_drawer trash_can dishwasher counter - container
-    flour onion - ingredient
-    knife - tool
-  )
-
-  (:init
-    (room_adjacent kitchen pantry west)
+(define (problem kitchen-problem)
+    (:domain kitchen-adventure)
     
-    (door_between door1 kitchen pantry)
+    (:objects
+        kitchen pantry - room
+        fridge kitchen-cupboard cutlery-drawer trash-can dishwasher - container
+        east west - direction
+        stove knife - tool
+        onion flour - ingredient
+    )
     
-    (ingredient_location onion fridge)
-    (ingredient_location flour pantry)
-
-    (tool_location knife counter)
-
-    (ingredient_in_container onion fridge)
-
-    (tool_held knife) ; Assuming the player has this tool from the start
-
-    (room_visited kitchen)
-  )
-
-  (:goal (and (meal_prepared)))
+    (:init
+        (at kitchen)
+        (container-closed fridge) (container-closed kitchen-cupboard)
+        (container-closed cutlery-drawer) (container-closed trash-can)
+        (container-closed dishwasher)
+        
+        (contains fridge onion) (contains pantry flour)
+        
+        (connected kitchen pantry west)
+        (door-closed kitchen pantry)
+        
+        (has-tool knife) (has-tool stove)
+        
+        (not (recipe-completed))
+        (not (meal-prepared))
+    )
+    
+    (:goal (and (recipe-completed) (meal-prepared)))
 )

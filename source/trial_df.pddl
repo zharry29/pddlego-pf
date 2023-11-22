@@ -1,69 +1,63 @@
-(define (domain environment)
-  (:requirements :strips :typing)
-  (:types
-    room item container tool ingredient door direction
-  )
+(define (domain kitchen-adventure)
+    (:requirements :strips :typing)
+    (:types room container object tool direction ingredient)
+    
+    (:predicates
+        (at ?r - room)
+        (connected ?r1 ?r2 - room ?d - direction)
+        (door-open ?r1 ?r2 - room)
+        (door-closed ?r1 ?r2 - room)
+        (container-open ?c - container)
+        (container-closed ?c - container)
+        (contains ?c - container ?o - object)
+        (ingredient-prepared ?i - ingredient)
+        (meal-prepared)
+        (carrying ?o - object)
+        (recipe-completed)
+        (has-tool ?t - tool)
+    )
+    
+    (:action move
+        :parameters (?from ?to - room ?d - direction)
+        :precondition (and (at ?from) (connected ?from ?to ?d) (door-open ?from ?to))
+        :effect (and (at ?to) (not (at ?from)))
+    )
 
-  (:predicates
-    (room_visited ?r - room)
-    (room_adjacent ?r1 ?r2 - room ?d - direction)
-    (ingredient_location ?i - ingredient ?l)
-    (tool_location ?t - tool ?l)
+    (:action open_door
+        :parameters (?from ?to - room ?d - direction)
+        :precondition (and (at ?from) (connected ?from ?to ?d) (door-closed ?from ?to))
+        :effect (and (door-open ?from ?to) (not (door-closed ?from ?to)))
+    )
 
-    (door_open ?d - door)
-    (door_between ?d - door ?r1 ?r2 - room)
+    (:action open_container
+        :parameters (?c - container)
+        :precondition (container-closed ?c)
+        :effect (and (container-open ?c) (not (container-closed ?c)))
+    )
 
-    (ingredient_in_container ?i - ingredient ?c - container)
-    (container_open ?c - container)
+    (:action take
+        :parameters (?c - container ?o - object)
+        :precondition (and (container-open ?c) (contains ?c ?o))
+        :effect (and (carrying ?o) (not (contains ?c ?o)))
+    )
 
-    (ingredient_held ?i - ingredient)
-    (tool_held ?t - tool)
+    (:action use_stove
+        :parameters (?o - object)
+        :precondition (and (carrying ?o) (has-tool stove))
+        :effect (ingredient-prepared ?o)
+    )
 
-    (ingredient_cooked ?i - ingredient)
-    (ingredient_diced ?i - ingredient)
+    (:action dice
+        :parameters (?o - object)
+        :precondition (and (carrying ?o) (has-tool knife))
+        :effect (ingredient-prepared ?o)
+    )
 
-    (meal_prepared)
-  )
-
-  (:action move
-    :parameters (?from ?to - room ?d - direction)
-    :precondition (and (room_adjacent ?from ?to ?d) (room_visited ?from))
-    :effect (and (room_visited ?to))
-  )
-
-  (:action open_door
-    :parameters (?d - door ?r1 ?r2 - room)
-    :precondition (and (not (door_open ?d)) (door_between ?d ?r1 ?r2))
-    :effect (door_open ?d)
-  )
-
-  (:action open_container
-    :parameters (?c - container)
-    :precondition (not (container_open ?c))
-    :effect (container_open ?c)
-  )
-
-  (:action take
-    :parameters (?i - ingredient ?c - container)
-    :precondition (and (ingredient_in_container ?i ?c) (container_open ?c))
-    :effect (and (ingredient_held ?i) (not (ingredient_in_container ?i ?c)))
-  )
-
-  (:action use_stove
-    :parameters (?i - ingredient ?s - tool)
-    :precondition (and (ingredient_held ?i) (tool_held ?s) (not (ingredient_cooked ?i)))
-    :effect (ingredient_cooked ?i)
-  )
-
-  (:action dice
-    :parameters (?i - ingredient ?k - tool)
-    :precondition (and (ingredient_held ?i) (tool_held ?k) (not (ingredient_diced ?i)))
-    :effect (ingredient_diced ?i)
-  )
-
-  (:action prepare_meal
-    :parameters ()
-    :precondition (and (ingredient_cooked onion) (ingredient_diced onion))
-    :effect (meal_prepared)
-  )
+    (:action prepare_meal
+        :parameters ()
+        :precondition (and (at kitchen) (has-tool stove) 
+                           (ingredient-prepared onion) (ingredient-prepared flour) 
+                           (not meal-prepared))
+        :effect (meal-prepared)
+    )
 )
