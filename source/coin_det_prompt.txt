@@ -71,6 +71,12 @@ You will modify the above problem file using add, replace, and delete operations
   }
 }
 
+Note a couple of things:
+1. When you see a closed door, you would use a placeholder for the room behind the door
+2. When you enter a room, you learn the name of the room and will replace the placeholder with the name. You should also make sure to replace that name for all relations under "init".
+3. When you enter a room, you're "at" the room and it becomes "visited".
+4. You should never delete the "visited" relations, because once a room is visited, it will remain that way.
+
 At this point you will gain further observations:
 Action: open door to south
 You open the wooden door, revealing the pantry.

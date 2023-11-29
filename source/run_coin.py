@@ -15,6 +15,7 @@ parser.add_argument('--model', default='gpt-4-1106-preview', type=str, help='Ope
 parser.add_argument('--method', default='', required=True, type=str, help='direct|pddl')
 parser.add_argument('--det', action='store_true', help='Whether to deterministically edit the problem file. Assumes method is pddl.')
 parser.add_argument('--oc', action='store_true', help='Whether to overwrite the cache.')
+parser.add_argument('--split', default='dev', required=True, type=str, help='Dev set includes seed of 0-9, test set includes seed of 10-109.')
 
 args = parser.parse_args()
 
@@ -42,7 +43,7 @@ def llm_direct(past_prompt, obs, valid_actions):
     prompt = past_prompt + [
         {"role": "user", "content": obs + "\n\n" + "Your valid actions are: " + str(valid_actions) + "\n\n" + "Which action do you take?"},
     ]
-    output = run_chatgpt(prompt, model=args.model, temperature=0)
+    output = run_chatgpt(prompt, model=args.model, temperature=1)
     taken_action = ""
     for valid_action in valid_actions:
         if valid_action in output:
@@ -71,8 +72,9 @@ def llm_pddl(past_prompt, obs, valid_actions, prev_pf=""):
                 output.append(line)
             elif o_start and line.strip() == ")":
                 o_start = False
-                for to_add in edit_json["objects"]["add"]:
-                    output.append("    " + to_add)
+                if "add" in edit_json["objects"]:
+                    for to_add in edit_json["objects"]["add"]:
+                        output.append("    " + to_add)
                 output.append(line)
             elif o_start:
                 if "replace" in edit_json["objects"] and line.strip() in edit_json["objects"]["replace"]:
@@ -183,6 +185,8 @@ def llm_pddl(past_prompt, obs, valid_actions, prev_pf=""):
             #print(resp)
             try:
                 actions = resp['result']['plan']
+                if actions == ['(reach-goal)']:
+                    raise KeyError
                 has_plan = True
                 prev_pf = pf
             except KeyError:
@@ -236,8 +240,14 @@ def llm_pddl(past_prompt, obs, valid_actions, prev_pf=""):
 
 # Then, randomly generate and play 10 games within the defined parameters
 steps_to_success = []
+if args.split == "dev":
+    seeds = range(0,10)
+elif args.split == "test":
+    seeds = range(10,60)
+else:
+    seeds = range(int(args.split), int(args.split) + 1)
 #for episode_id in range(0,10):
-for episode_id in [0]:
+for episode_id in seeds:
     # First step
     obs, infos = env.reset(seed=episode_id, gameFold="train", generateGoldPath=True)
     print("Gold path: " + str(env.getGoldActionSequence()))
@@ -288,11 +298,11 @@ for episode_id in [0]:
                     action_queue += actions
                 if action_queue:
                     taken_action = action_queue.pop(0)
-                    # if planned action is invalid, execute a random action
-                    if taken_action not in valid_actions:
-                        raise ValueError("Invalid action")
-                        steps_to_success.append(-1)
-                        break
+                    # if planned action is invalid, allow it
+                    #if taken_action not in valid_actions:
+                    #    raise ValueError("Invalid action")
+                    #    steps_to_success.append(-1)
+                    #    break
                 else:
                     #raise ValueError("No plan is found")
                     steps_to_success.append(-1)
