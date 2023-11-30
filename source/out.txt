@@ -1,0 +1,160 @@
+=====Episode 0=====
+< examine cookbook
+> Gather all following ingredients and follow the directions to prepare this tasty meal.
+
+Ingredients:
+  black pepper
+  block of cheese
+  salt
+  red apple
+  yellow potato
+
+Directions:
+  slice the block of cheese
+  dice the red apple
+  chop the yellow potato
+  grill the yellow potato
+  prepare meal
+
+
+< look around
+> You are in the kitchen. In one part of the room you see a stove. There is also an oven. You also see a fridge that is closed. In another part of the room you see a counter that has a knife, a red apple, a raw yellow potato, and a cookbook on it. In one part of the room you see a kitchen cupboard that is closed. There is also a cutlery drawer that is closed. You also see a trash can that is closed. In another part of the room you see a dishwasher that is closed. In one part of the room you see a dining chair, that has nothing on it. 
+To the South you see a closed plain door. To the West you see the corridor. 
+< open fridge
+> You open the fridge. The fridge contains a block of cheese.
+< take block of cheese
+> You take the block of cheese.
+< take knife
+> You take the knife.
+< take red apple
+> You take the red apple.
+< take yellow potato
+> You take the yellow potato.
+< open kitchen cupboard
+> You open the kitchen cupboard. It's empty inside.
+< open cutlery drawer
+> You open the cutlery drawer. It's empty inside.
+< open trash can
+> You open the trash can. It's empty inside.
+< open dishwasher
+> You open the dishwasher. It's empty inside.
+< move west
+> You are in the corridor. In one part of the room you see a key holder, that has nothing on it. There is also a shoe cabinet that is closed. You also see a umbrella stand, that has nothing on it. In another part of the room you see a hat rack, that has nothing on it. In one part of the room you see a coat hanger, that has nothing on it. 
+To the North you see a closed wood door. To the East you see the kitchen. To the West you see a closed sliding patio door. 
+< open shoe cabinet
+> You open the shoe cabinet. It's empty inside.
+< open door to north
+> You open the wood door, revealing the bedroom. 
+< move north
+> You are in the bedroom. In one part of the room you see a dressing table, that has nothing on it. There is also a desk chair, that has nothing on it. You also see a desk, that has nothing on it. In another part of the room you see a chest of drawers that is closed. In one part of the room you see a wardrobe that is closed. There is also a night stand, that has nothing on it. You also see a bed, that has nothing on it. 
+Through an open wood door, to the South you see the corridor. 
+< open chest of drawers
+> You open the chest of drawers. It's empty inside.
+< open wardrobe
+> You open the wardrobe. It's empty inside.
+< move south
+> You are in the corridor. In one part of the room you see a key holder, that has nothing on it. There is also an open shoe cabinet, that is empty. You also see a umbrella stand, that has nothing on it. In another part of the room you see a hat rack, that has nothing on it. In one part of the room you see a coat hanger, that has nothing on it. 
+Through an open wood door, to the North you see the bedroom. To the East you see the kitchen. To the West you see a closed sliding patio door. 
+< open door to west
+> You open the sliding patio door, revealing the backyard. 
+< move west
+> You are in the backyard. In one part of the room you see a barbeque. There is also a workbench, that has nothing on it. You also see a patio chair, that has nothing on it. In another part of the room you see a patio table, that has nothing on it. In one part of the room you see a clothes line, that has nothing on it. There is also a garden, that has nothing on it. 
+Through an open sliding patio door, to the East you see the corridor. 
+< move east
+> You are in the corridor. In one part of the room you see a key holder, that has nothing on it. There is also an open shoe cabinet, that is empty. You also see a umbrella stand, that has nothing on it. In another part of the room you see a hat rack, that has nothing on it. In one part of the room you see a coat hanger, that has nothing on it. 
+Through an open wood door, to the North you see the bedroom. To the East you see the kitchen. Through an open sliding patio door, to the West you see the backyard. 
+< move east
+> You are in the kitchen. In one part of the room you see a stove. There is also an oven. You also see an open fridge, that is empty. In another part of the room you see a counter that has a cookbook on it. In one part of the room you see an open kitchen cupboard, that is empty. There is also an open cutlery drawer, that is empty. You also see an open trash can, that is empty. In another part of the room you see an open dishwasher, that is empty. In one part of the room you see a dining chair, that has nothing on it. 
+To the South you see a closed plain door. To the West you see the corridor. 
+< open door to south
+> You open the plain door, revealing the pantry. 
+< move south
+> You are in the pantry. In one part of the room you see a folding chair, that has nothing on it. There is also a shelf that has some black pepper, and some salt on it. 
+Through an open plain door, to the North you see the kitchen. 
+< take black pepper
+> You take the black pepper.
+< take salt
+> You take the salt.
+(define (problem exploration)
+  (:domain environment)
+  (:objects
+    black_pepper - ingredient
+    block_of_cheese - ingredient
+    salt - ingredient
+    red_apple - ingredient
+    yellow_potato - ingredient
+    knife - knife
+    toaster - toaster
+    barbeque - barbeque
+    kitchen - location
+    north south east west - direction
+    pantry - location
+    corridor - location
+    bedroom - location
+    backyard - location
+    backyard - location
+    pantry - location
+  )
+  (:init
+    (have black_pepper)
+    (have block_of_cheese)
+    (have salt)
+    (have red_apple)
+    (have yellow_potato)
+    (have knife)
+    (obj_at barbeque backyard)
+    (at pantry)
+    (visited kitchen)
+    (connected kitchen pantry south)
+    (connected kitchen corridor west)
+    (visited corridor)
+    (connected corridor kitchen east)
+    (connected corridor bedroom north)
+    (connected corridor backyard west)
+    (visited bedroom)
+    (connected bedroom corridor south)
+    (visited backyard)
+    (connected backyard corridor east)
+    (visited pantry)
+    (connected pantry kitchen north)
+  )
+  (:goal 
+    (and
+        (sliced block_of_cheese)
+        (diced red_apple)
+        (chopped yellow_potato)
+        (grilled yellow_potato)
+        (at kitchen)
+    )
+  )
+)
+['(dice red_apple knife)', '(slice block_of_cheese knife)', '(chop yellow_potato knife)', '(move pantry kitchen north)', '(move kitchen corridor west)', '(move corridor backyard west)', '(use_barbeque yellow_potato backyard barbeque)', '(move backyard corridor east)', '(move corridor kitchen east)']
+< dice red apple
+> You dice the red apple.
+< slice block of cheese
+> You slice the block of cheese.
+< chop yellow potato
+> You chop the yellow potato.
+< move north
+> You are in the kitchen. In one part of the room you see a stove. There is also an oven. You also see an open fridge, that is empty. In another part of the room you see a counter that has a cookbook on it. In one part of the room you see an open kitchen cupboard, that is empty. There is also an open cutlery drawer, that is empty. You also see an open trash can, that is empty. In another part of the room you see an open dishwasher, that is empty. In one part of the room you see a dining chair, that has nothing on it. 
+Through an open plain door, to the South you see the pantry. To the West you see the corridor. 
+< move west
+> You are in the corridor. In one part of the room you see a key holder, that has nothing on it. There is also an open shoe cabinet, that is empty. You also see a umbrella stand, that has nothing on it. In another part of the room you see a hat rack, that has nothing on it. In one part of the room you see a coat hanger, that has nothing on it. 
+Through an open wood door, to the North you see the bedroom. To the East you see the kitchen. Through an open sliding patio door, to the West you see the backyard. 
+< move west
+> You are in the backyard. In one part of the room you see a barbeque. There is also a workbench, that has nothing on it. You also see a patio chair, that has nothing on it. In another part of the room you see a patio table, that has nothing on it. In one part of the room you see a clothes line, that has nothing on it. There is also a garden, that has nothing on it. 
+Through an open sliding patio door, to the East you see the corridor. 
+< cook yellow potato in barbeque
+> You grill the yellow potato with the barbeque.
+< move east
+> You are in the corridor. In one part of the room you see a key holder, that has nothing on it. There is also an open shoe cabinet, that is empty. You also see a umbrella stand, that has nothing on it. In another part of the room you see a hat rack, that has nothing on it. In one part of the room you see a coat hanger, that has nothing on it. 
+Through an open wood door, to the North you see the bedroom. To the East you see the kitchen. Through an open sliding patio door, to the West you see the backyard. 
+< move east
+> You are in the kitchen. In one part of the room you see a stove. There is also an oven. You also see an open fridge, that is empty. In another part of the room you see a counter that has a cookbook on it. In one part of the room you see an open kitchen cupboard, that is empty. There is also an open cutlery drawer, that is empty. You also see an open trash can, that is empty. In another part of the room you see an open dishwasher, that is empty. In one part of the room you see a dining chair, that has nothing on it. 
+Through an open plain door, to the South you see the pantry. To the West you see the corridor. 
+< prepare meal
+> Adding the meal to your inventory.
+< eat meal
+> You eat the meal.  It is delicious.
+[36]
+[36]

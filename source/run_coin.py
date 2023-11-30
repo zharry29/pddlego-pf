@@ -80,7 +80,7 @@ def llm_pddl(past_prompt, obs, valid_actions, prev_pf=""):
                 if "replace" in edit_json["objects"] and line.strip() in edit_json["objects"]["replace"]:
                     line = edit_json["objects"]["replace"][line.strip()]
                     output.append("    " + line)
-                elif line.strip() in edit_json["objects"]["delete"]:
+                elif "delete" in edit_json["objects"] and line.strip() in edit_json["objects"]["delete"]:
                     continue
                 else:
                     output.append(line)
@@ -89,14 +89,15 @@ def llm_pddl(past_prompt, obs, valid_actions, prev_pf=""):
                 output.append(line)
             elif i_start and line.strip() == ")":
                 i_start = False
-                for to_add in edit_json["init"]["add"]:
-                    output.append("    " + to_add)
+                if "add" in edit_json["init"]:
+                    for to_add in edit_json["init"]["add"]:
+                        output.append("    " + to_add)
                 output.append(line)
             elif i_start:
-                if line.strip() in edit_json["init"]["replace"]:
+                if "replace" in edit_json["init"] and line.strip() in edit_json["init"]["replace"]:
                     line = edit_json["init"]["replace"][line.strip()]
                     output.append("    " + line)
-                elif line.strip() in edit_json["init"]["delete"]:
+                elif "delete" in edit_json["init"] and line.strip() in edit_json["init"]["delete"]:
                     continue
                 else:
                     output.append(line)
@@ -169,11 +170,12 @@ def llm_pddl(past_prompt, obs, valid_actions, prev_pf=""):
             df = open("coin_df.pddl", "r").read()
             if args.det:
                 print(output)
+                out_json = json.loads(output)
                 try:
-                    out_json = json.loads(output)
-                except json.decoder.JSONDecodeError:
-                    out_json = json.loads(fix_json(output))
-                pf = apply_edit(prev_pf, out_json)
+                    pf = apply_edit(prev_pf, out_json)
+                except KeyError:
+                    retry_count += 1
+                    print("Edit JSON invalid. Retrying...")
             else:
                 pf = parse(output)
             print(pf)
@@ -189,7 +191,7 @@ def llm_pddl(past_prompt, obs, valid_actions, prev_pf=""):
                     raise KeyError
                 has_plan = True
                 prev_pf = pf
-            except KeyError:
+            except (KeyError,TypeError):
                 retry_count += 1
                 print("No plan found. Retrying...")
             #    return prompt, []
@@ -323,4 +325,7 @@ for episode_id in seeds:
             break
     else:
         steps_to_success.append(-1)
+
 print(steps_to_success)
+# print portion of numbers larger than or equal to zero
+print(sum(x >= 0 for x in steps_to_success) / len(steps_to_success))

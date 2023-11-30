@@ -1,40 +1,52 @@
 (define (problem exploration)
   (:domain environment)
   (:objects
+    black_pepper - ingredient
+    block_of_cheese - ingredient
+    salt - ingredient
+    red_apple - ingredient
+    yellow_potato - ingredient
+    knife - knife
+    toaster - toaster
     kitchen - location
     north south east west - direction
+    pantry - location
+    corridor - location
+    bedroom - location
     backyard - location
-    loc2 - location
     backyard - location
-    driveway - location
-    street - location
-    loc3 - location
-    loc4 - location
+    pantry - location
   )
   (:init
-    (at street)
+    (have black_pepper)
+    (have block_of_cheese)
+    (have salt)
+    (have red_apple)
+    (have yellow_potato)
+    (have knife)
+    (obj_at barbeque backyard)
+    (at pantry)
     (visited kitchen)
-    (connected kitchen backyard south)
-    (connected kitchen loc2 west)
-    (closed_door kitchen loc2)
+    (connected kitchen pantry south)
+    (connected kitchen corridor west)
+    (visited corridor)
+    (connected corridor kitchen east)
+    (connected corridor bedroom north)
+    (connected corridor backyard west)
+    (visited bedroom)
+    (connected bedroom corridor south)
     (visited backyard)
-    (connected backyard kitchen north)
-    (connected backyard driveway south)
-    (connected backyard street east)
-    (connected backyard loc3 west)
-    (closed_door backyard loc3)
-    (visited driveway)
-    (connected driveway backyard north)
-    (connected street backyard west)
-    (connected street loc4 north)
-    (closed_door street loc4)
+    (connected backyard corridor east)
+    (visited pantry)
+    (connected pantry kitchen north)
   )
   (:goal
-    (exists (?x - location)
-        (and
-            (not (visited ?x))
-            (at ?x)
-        )
+    (and
+        (sliced block_of_cheese)
+        (diced red_apple)
+        (chopped yellow_potato)
+        (grilled yellow_potato)
+        (at kitchen)
     )
   )
 )
