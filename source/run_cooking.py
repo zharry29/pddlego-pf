@@ -72,9 +72,12 @@ def run_pddl_solver(df,pf):
     resp = post_pddl(data)
     #print(resp)
     # to account for the last pass where all rooms are exhausted
-    if resp["status"] == "error" and "goal can be simplified to FALSE." in resp["result"]["output"]:
-        return [], True
-    elif resp["status"] == "error":
+    try:
+        if resp["status"] == "error" and "goal can be simplified to FALSE." in resp["result"]["output"]:
+            return [], True
+        elif resp["status"] == "error":
+            return [], False
+    except TypeError:
         return [], False
     actions = resp['result']['plan']
     if isinstance(actions[0], str):
@@ -175,9 +178,10 @@ def llm_pddl_find(past_prompt, obs, prev_pf=""):
         i_start = False
         # Manually cascade location replace
         loc_replace = {}
-        for s,t in edit_json["objects"]["replace"].items():
-            if s.endswith(" - location") and t.endswith(" - location"):
-                loc_replace[s[:-len(" - location")]] = t[:-len(" - location")]
+        if "replace" in edit_json["objects"]:
+            for s,t in edit_json["objects"]["replace"].items():
+                if s.endswith(" - location") and t.endswith(" - location"):
+                    loc_replace[s[:-len(" - location")]] = t[:-len(" - location")]
         for line in prev_pf.split("\n"):
             if "(:object" in line:
                 o_start = True
@@ -248,25 +252,32 @@ def llm_pddl_find(past_prompt, obs, prev_pf=""):
 
     df = open("coin_df.pddl", "r").read()
     cache_name = "cache_cooking.pkl"
-    try:
-        cache = pickle.load(open(cache_name, "rb"))
-    except FileNotFoundError:
-        pickle.dump({}, open(cache_name, "wb"))
-        cache = pickle.load(open(cache_name, "rb"))
-    if not args.oc:
-        output = cache[(NUM_LOCATIONS, NUM_INGREDIENTS, episode_id, step_id)]
+    #try:
+    #    cache = pickle.load(open(cache_name, "rb"))
+    #except FileNotFoundError:
+    #    pickle.dump({}, open(cache_name, "wb"))
+    #    cache = pickle.load(open(cache_name, "rb"))
+    #if not args.oc:
+    #    output = cache[(NUM_LOCATIONS, NUM_INGREDIENTS, episode_id, step_id)]
+    if False:
+        pass
     else:
         retry_count = 0
         has_plan = False
         while not has_plan and retry_count < MAX_RETRY:
             force_json = True if args.det else False
             output = run_chatgpt(prompt, model=args.model, temperature=0, force_json=force_json)
-            cache[(NUM_LOCATIONS, NUM_INGREDIENTS, episode_id, step_id)] = output
-            pickle.dump(cache, open(cache_name, "wb"))
+            #cache[(NUM_LOCATIONS, NUM_INGREDIENTS, episode_id, step_id)] = output
+            #pickle.dump(cache, open(cache_name, "wb"))
 
             if args.det:
                 out_json = json.loads(output)
-                pf = apply_edit(prev_pf, out_json)
+                try:
+                    pf = apply_edit(prev_pf, out_json)
+                except KeyError:
+                    print("KeyError. Retrying...")
+                    retry_count += 1
+                    continue
             else:
                 def parse(output):
                     processed_output = []
@@ -573,3 +584,4 @@ for episode_id in seeds:
         #_ = input("Continue?")
     print(steps_to_success)
 print(steps_to_success)
+print(sum(x >= 0 for x in steps_to_success) / len(steps_to_success))

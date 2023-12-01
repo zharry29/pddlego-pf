@@ -96,7 +96,10 @@ def llm_pddl(past_prompt, obs, valid_actions, prev_pf=""):
             elif i_start:
                 if "replace" in edit_json["init"] and line.strip() in edit_json["init"]["replace"]:
                     line = edit_json["init"]["replace"][line.strip()]
-                    output.append("    " + line)
+                    try:
+                        output.append("    " + line)
+                    except TypeError:
+                        continue
                 elif "delete" in edit_json["init"] and line.strip() in edit_json["init"]["delete"]:
                     continue
                 else:
