@@ -45,7 +45,16 @@ def post_pddl(data):
 def llm_direct(past_prompt, obs, valid_actions):
     if not past_prompt:
         past_prompt = [
-            {"role": "user", "content": "You will play a game where your goal is to read a recipe, find ingredents, cook a meal, and eat the meal. I will provide you with a description of the environment, and you will take one of the valid actions. Ready?"},
+            {"role": "user", "content": """You will play a game where your goal is to read a recipe, find ingredients, cook a meal, and eat the meal. The recipe includes the ingredients that you'll need to collect. The ingredients are scattered around rooms and may be found in containers. After you find the ingredients, you need to process them as required in the recipe. Here are how the ingredients are processed:
+- slice: use a knife to slice the ingredient
+- chop: use a knife to chop the ingredient
+- dice: use a knife to dice the ingredient
+- grill: use a toaster or a barbeque to cook the ingredient will grill it
+- roast: use an oven to cook the ingredient will roast it
+- fry: use a stove to cook the ingredient will fry it
+You have to process the ingredients as specified in the recipe, otherwise you will fail. Once the ingredients are processed, you can cook the meal and eat the meal in the kitchen, so make sure you go back to the kitchen at that point.
+             
+Now, I will provide you with a description of the environment, and you will take one of the valid actions. Ready?"""},
             {"role": "assistant", "content": "Absolutely, I'm ready! Please describe the environment."},
         ]
     prompt = past_prompt + [
@@ -162,7 +171,7 @@ def llm_pddl_cook(prev_pf, required_ingredients, required_tools, all_location_it
             out_lines.append(")")
             break
     pf = "\n".join(out_lines)
-    #print(pf)
+    print(pf)
     df = open("cooking_df.pddl", "r").read()
     actions, has_plan = run_pddl_solver(df, pf)
     #print(actions)

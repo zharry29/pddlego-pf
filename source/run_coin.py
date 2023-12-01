@@ -140,6 +140,7 @@ def llm_pddl(past_prompt, obs, valid_actions, prev_pf=""):
     #print(prompt)
     #raise SystemExit()
     
+    df = open("coin_df.pddl", "r").read()
     cache_name = "cache_coin.pkl"
     try:
         cache = pickle.load(open(cache_name, "rb"))
@@ -170,7 +171,6 @@ def llm_pddl(past_prompt, obs, valid_actions, prev_pf=""):
                         break
                 return "\n".join(processed_output)
             #raise SystemExit
-            df = open("coin_df.pddl", "r").read()
             if args.det:
                 print(output)
                 out_json = json.loads(output)
@@ -179,6 +179,7 @@ def llm_pddl(past_prompt, obs, valid_actions, prev_pf=""):
                 except KeyError:
                     retry_count += 1
                     print("Edit JSON invalid. Retrying...")
+                    continue
             else:
                 pf = parse(output)
             print(pf)
@@ -197,6 +198,7 @@ def llm_pddl(past_prompt, obs, valid_actions, prev_pf=""):
             except (KeyError,TypeError):
                 retry_count += 1
                 print("No plan found. Retrying...")
+                continue
             #    return prompt, []
             #print(actions)
     if not has_plan:
