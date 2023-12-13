@@ -2,6 +2,8 @@
  
 This preliminary README only provides usage. Details will be added in the near future. 
 
+First, install [TextWroldExpress](https://github.com/cognitiveailab/TextWorldExpress).
+
 To run experiment on either Coin Collector or Cooking World:
 > python run_coin.py|run_cooking.py --model MODEL --method METHOD --split SPLIT [--det] [--oc]
 
